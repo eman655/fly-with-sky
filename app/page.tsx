@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
 import { FleetGallery } from '../components/FleetGallery';
 import { Footer } from '../components/Footer';
+import { SideDrawer } from '../components/SideDrawer';
+import { CustomerDashboard } from '../components/CustomerDashboard';
 import { FlightBookingEngine } from '../components/FlightBookingEngine';
 import { InteractiveSeatMap } from '../components/InteractiveSeatMap';
 import { PassportVerificationModal } from '../components/PassportVerificationModal';
@@ -27,8 +29,15 @@ export default function Home() {
   const [currency, setCurrency] = useState<CurrencyCode>('PKR');
   const [dir, setDir] = useState<Direction>('ltr');
 
-  // Active User Profile
+  // View state: 'MAIN' vs 'DASHBOARD'
+  const [currentView, setCurrentView] = useState<'MAIN' | 'DASHBOARD'>('MAIN');
+
+  // Active User Profile & Permanent Travel History
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [travelHistory, setTravelHistory] = useState<any[]>([]);
+
+  // Navigation Modals
+  const [isSideDrawerOpen, setIsSideDrawerOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
   // Booking & Flight Selection
@@ -46,6 +55,23 @@ export default function Home() {
       const savedUser = localStorage.getItem('flywithsky_user');
       if (savedUser) {
         setCurrentUser(JSON.parse(savedUser));
+      } else {
+        const defaultUser: UserProfile = {
+          fullName: 'Hamza Latif',
+          cnic: '31302-5257137-7',
+          phone: '+92 300 1234567',
+          email: 'hamza.latif@flywithsky.com',
+          nationality: 'Pakistan',
+          loyaltyTier: 'Empyrean VIP',
+          milesBalance: 18500
+        };
+        setCurrentUser(defaultUser);
+        localStorage.setItem('flywithsky_user', JSON.stringify(defaultUser));
+      }
+
+      const savedHistory = localStorage.getItem('flywithsky_bookings');
+      if (savedHistory) {
+        setTravelHistory(JSON.parse(savedHistory));
       }
     } catch {}
   }, []);
@@ -69,13 +95,59 @@ export default function Home() {
     } catch {}
   };
 
+  // Backup Export
+  const handleDownloadBackup = () => {
+    const backupData = {
+      airline: 'The Fly With Sky',
+      timestamp: new Date().toISOString(),
+      customerProfile: currentUser,
+      travelHistory: travelHistory,
+      preferences: { currency, lang }
+    };
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `TheFlyWithSky_Backup_${currentUser?.cnic || 'Customer'}_${Date.now()}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    alert('Customer data backup successfully exported and saved to your device!');
+  };
+
+  // Backup Restore
+  const handleRestoreBackup = (e: any) => {
+    const fileReader = new FileReader();
+    if (e.target.files && e.target.files[0]) {
+      fileReader.readAsText(e.target.files[0], 'UTF-8');
+      fileReader.onload = (event: any) => {
+        try {
+          const parsed = JSON.parse(event.target.result);
+          if (parsed.customerProfile) {
+            setCurrentUser(parsed.customerProfile);
+            localStorage.setItem('flywithsky_user', JSON.stringify(parsed.customerProfile));
+          }
+          if (parsed.travelHistory && Array.isArray(parsed.travelHistory)) {
+            setTravelHistory(parsed.travelHistory);
+            localStorage.setItem('flywithsky_bookings', JSON.stringify(parsed.travelHistory));
+          }
+          alert('Backup restored successfully! All past flight records restored.');
+          setIsSideDrawerOpen(false);
+          setCurrentView('DASHBOARD');
+        } catch (err) {
+          alert('Invalid backup file format.');
+        }
+      };
+    }
+  };
+
   return (
     <div
       dir={dir}
       className="min-h-screen bg-[#060a14] text-neutral-100 selection:bg-amber-400 selection:text-black antialiased flex flex-col justify-between"
       style={{ fontFamily: LANGUAGES[lang].fontFamily }}
     >
-      {/* 1. Master Header with "The Fly With Sky" Branding */}
+      {/* 1. Header with Side Drawer Hamburger Trigger */}
       <Header
         currentLang={lang}
         onLanguageChange={handleLanguageChange}
@@ -85,85 +157,128 @@ export default function Home() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         onOpenKyc={() => setIsKycOpen(true)}
-        onViewBookings={() => setIsBoardingPassOpen(true)}
+        onOpenSideDrawer={() => setIsSideDrawerOpen(true)}
+        onOpenDashboard={() => setCurrentView('DASHBOARD')}
         t={t}
       />
 
+      {/* 2. Side Drawer (Pop-up Side Menu) */}
+      <SideDrawer
+        isOpen={isSideDrawerOpen}
+        onClose={() => setIsSideDrawerOpen(false)}
+        currentUser={currentUser}
+        activeView={currentView}
+        onSelectView={(v: any) => {
+          if (v === 'MAIN' || v === 'DASHBOARD') setCurrentView(v);
+        }}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
+        onOpenKyc={() => setIsKycOpen(true)}
+        onDownloadBackup={handleDownloadBackup}
+        onRestoreBackup={handleRestoreBackup}
+        lang={lang}
+        currency={currency}
+        onLanguageChange={handleLanguageChange}
+        onCurrencyChange={setCurrency}
+      />
+
       <main className="flex-1">
-        {/* 2. Elevated Hero Section */}
-        <section id="hero" className="relative py-12 lg:py-16 px-4 text-center border-b border-white/10 bg-gradient-to-b from-[#080d19] to-[#060a14]">
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-bold text-amber-300 mb-4 shadow-md">
-              <span>✦ The Fly With Sky — Flagship Global Aviation ✦</span>
-            </div>
+        {currentView === 'DASHBOARD' ? (
+          /* Dedicated Customer Dashboard */
+          <CustomerDashboard
+            currentUser={currentUser}
+            travelHistory={travelHistory}
+            onOpenBooking={() => setCurrentView('MAIN')}
+            onDownloadBackup={handleDownloadBackup}
+            onRestoreBackup={handleRestoreBackup}
+            onPrintTicket={(booking: any) => {
+              setSelectedFlight(booking.flight);
+              setIsBoardingPassOpen(true);
+            }}
+            currencyConfig={currency}
+            lang={lang}
+          />
+        ) : (
+          /* Main Public Booking Experience */
+          <>
+            <section id="hero" className="relative py-12 lg:py-16 px-4 text-center border-b border-white/10 bg-gradient-to-b from-[#080d19] to-[#060a14]">
+              <div className="max-w-4xl mx-auto">
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-bold text-amber-300 mb-4 shadow-md">
+                  <span>✦ The Fly With Sky — Flagship Global Aviation ✦</span>
+                </div>
 
-            <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
-              {lang === 'ur'
-                ? 'دی فلائی ود سکائی — ایک باوقار سفر کا آغاز'
-                : 'Fly with Grace, Luxury & Complete Ease'}
-            </h1>
+                <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
+                  {lang === 'ur'
+                    ? 'دی فلائی ود سکائی — ایک باوقار سفر کا آغاز'
+                    : 'Fly with Grace, Luxury & Complete Ease'}
+                </h1>
 
-            <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
-              {lang === 'ur'
-                ? 'لاہور، کراچی، اسلام آباد، دبئی، نیویارک اور لندن کے لیے پریمیئر پروازیں سب سے شفاف کرایوں اور شاہی انداز میں بک کریں۔'
-                : 'Experience intercontinental flagship routes connecting Lahore, Karachi, Islamabad, Dubai, New York, and London with effortless digital booking.'}
-            </p>
-          </div>
-        </section>
+                <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
+                  {lang === 'ur'
+                    ? 'لاہور، کراچی، اسلام آباد، دبئی، نیویارک اور لندن کے لیے پریمیئر پروازیں سب سے شفاف کرایوں اور شاہی انداز میں بک کریں۔'
+                    : 'Experience intercontinental flagship routes connecting Lahore, Karachi, Islamabad, Dubai, New York, and London with effortless digital booking.'}
+                </p>
+              </div>
+            </section>
 
-        {/* 3. Core Flight Booking Engine (Mandatory CNIC & Phone data before booking) */}
-        <FlightBookingEngine
-          currentCurrency={currency}
-          currentUser={currentUser}
-          onBookingComplete={(booking: ConfirmedBooking) => {
-            setSelectedFlight(booking.flight);
-            setSelectedCabin(booking.cabin);
-            setIsBoardingPassOpen(true);
-          }}
-          t={t}
-        />
+            {/* Core Flight Booking Engine */}
+            <FlightBookingEngine
+              currentCurrency={currency}
+              currentUser={currentUser}
+              onBookingComplete={(booking: ConfirmedBooking) => {
+                setSelectedFlight(booking.flight);
+                setSelectedCabin(booking.cabin);
+                const updated = [booking, ...travelHistory];
+                setTravelHistory(updated);
+                localStorage.setItem('flywithsky_bookings', JSON.stringify(updated));
+                setIsBoardingPassOpen(true);
+              }}
+              t={t}
+            />
 
-        {/* 4. Global Aircraft Fleet Gallery with Country-Specific Liveries */}
-        <FleetGallery
-          onSelectAircraft={(aircraft) => {
-            const el = document.getElementById('booking');
-            if (el) el.scrollIntoView({ behavior: 'smooth' });
-          }}
-          lang={lang}
-          t={t}
-        />
+            {/* Global Aircraft Fleet Showcase */}
+            <FleetGallery
+              onSelectAircraft={(aircraft: any) => {
+                const el = document.getElementById('booking');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+              lang={lang}
+              t={t}
+            />
 
-        {/* 5. 3D Aircraft Cabin Seat Map */}
-        <InteractiveSeatMap
-          currentCurrency={currency}
-          selectedSeats={selectedSeats}
-          onSeatToggle={(seat) => {
-            setSelectedSeats((prev) =>
-              prev.some((s) => s.id === seat.id)
-                ? prev.filter((s) => s.id !== seat.id)
-                : [...prev, seat]
-            );
-          }}
-          cabinClass={selectedCabin}
-          t={t}
-        />
+            {/* 3D Seat Map */}
+            <InteractiveSeatMap
+              currentCurrency={currency}
+              selectedSeats={selectedSeats}
+              onSeatToggle={(seat) => {
+                setSelectedSeats((prev) =>
+                  prev.some((s) => s.id === seat.id)
+                    ? prev.filter((s) => s.id !== seat.id)
+                    : [...prev, seat]
+                );
+              }}
+              cabinClass={selectedCabin}
+              t={t}
+            />
+          </>
+        )}
       </main>
 
-      {/* 6. Footer with Mandatory "Developed by Hamza Latif" Signature */}
+      {/* 3. Footer with Developed by Hamza Latif */}
       <Footer lang={lang} />
 
-      {/* Mandatory Auth Modal (CNIC / ID Card & Phone Auth with OTP) */}
+      {/* Auth Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(user) => {
+        onLoginSuccess={(user: any) => {
           setCurrentUser(user);
         }}
         lang={lang}
         t={t}
       />
 
-      {/* WebRTC Live Camera Passport Scanner & e-KYC Verification Modal */}
+      {/* WebRTC Live Camera Passport Scanner */}
       <PassportVerificationModal
         isOpen={isKycOpen}
         onClose={() => setIsKycOpen(false)}
@@ -172,7 +287,7 @@ export default function Home() {
         t={t}
       />
 
-      {/* Digital Boarding Pass Modal */}
+      {/* Boarding Pass Modal */}
       <BoardingPassModal
         isOpen={isBoardingPassOpen}
         onClose={() => setIsBoardingPassOpen(false)}

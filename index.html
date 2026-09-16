@@ -141,7 +141,7 @@
         cruiseSpeed: 'Mach 0.84 (905 km/h)',
         range: '13,650 km Non-stop',
         image: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?auto=format&fit=crop&w=1200&q=80',
-        badge: 'National Pride',
+        badge: 'National Pride Livery',
         description: 'Bespoke green-tail sovereign livery with crescent accents, spacious twin-aisle executive suites, and Halal culinary atelier.'
       },
       {
@@ -316,19 +316,24 @@
 
     // --- MAIN APP COMPONENT ---
     function TheFlyWithSkyApp() {
-      // Global State
+      // Global View: 'MAIN' (Flight search & booking) | 'DASHBOARD' (Customer Dashboard)
+      const [currentView, setCurrentView] = useState('MAIN');
+
+      // Global Settings
       const [lang, setLang] = useState('en');
       const [currency, setCurrency] = useState('PKR');
-      const [currentUser, setCurrentUser] = useState(null);
 
-      // Modals
+      // User Profile & Permanent Data
+      const [currentUser, setCurrentUser] = useState(null);
+      const [travelHistory, setTravelHistory] = useState([]);
+
+      // Navigation & Modals
+      const [isSideDrawerOpen, setIsSideDrawerOpen] = useState(false);
       const [isAuthOpen, setIsAuthOpen] = useState(false);
       const [isKycOpen, setIsKycOpen] = useState(false);
-      const [isPnrHistoryOpen, setIsPnrHistoryOpen] = useState(false);
 
       // Booking Flow Steps: 'SEARCH' | 'PASSENGER_FORM' | 'CONFIRMED'
       const [bookingStep, setBookingStep] = useState('SEARCH');
-      const [tripType, setTripType] = useState('round_trip');
       const [originIata, setOriginIata] = useState('LHE');
       const [destIata, setDestIata] = useState('DXB');
       const [departDate, setDepartDate] = useState('2026-10-20');
@@ -339,11 +344,11 @@
 
       // Mandatory Passenger Identity Information
       const [passengerForm, setPassengerForm] = useState({
-        fullName: '',
-        cnic: '',
-        phone: '',
-        email: '',
-        passportNumber: '',
+        fullName: 'Hamza Latif',
+        cnic: '31302-5257137-7',
+        phone: '+92 300 1234567',
+        email: 'hamza.latif@flywithsky.com',
+        passportNumber: 'PK892104',
         dob: '1995-05-15',
         gender: 'Male',
         meal: 'Halal Chicken Biryani (حلال چکن بریانی)'
@@ -363,20 +368,52 @@
       const activeLang = LANGUAGES.find((l) => l.code === lang) || LANGUAGES[0];
       const curr = CURRENCIES[currency];
 
-      // Auto-load saved user session
+      // Auto-load saved user session & permanent travel history on boot
       useEffect(() => {
         try {
-          const saved = localStorage.getItem('flywithsky_user');
-          if (saved) {
-            const u = JSON.parse(saved);
+          const savedUser = localStorage.getItem('flywithsky_user');
+          if (savedUser) {
+            const u = JSON.parse(savedUser);
             setCurrentUser(u);
             setPassengerForm((prev) => ({
               ...prev,
-              fullName: u.name,
-              cnic: u.cnic,
-              phone: u.phone,
-              email: u.email || `${u.cnic.replace(/\D/g, '')}@flywithsky.com`
+              fullName: u.name || prev.fullName,
+              cnic: u.cnic || prev.cnic,
+              phone: u.phone || prev.phone,
+              email: u.email || prev.email
             }));
+          } else {
+            // Default logged-in VIP profile for instant test
+            const defaultUser = {
+              name: 'Hamza Latif',
+              cnic: '31302-5257137-7',
+              phone: '+92 300 1234567',
+              email: 'hamza.latif@flywithsky.com',
+              tier: 'VIP Flagship Member'
+            };
+            setCurrentUser(defaultUser);
+            localStorage.setItem('flywithsky_user', JSON.stringify(defaultUser));
+          }
+
+          const savedHistory = localStorage.getItem('flywithsky_bookings');
+          if (savedHistory) {
+            setTravelHistory(JSON.parse(savedHistory));
+          } else {
+            // Pre-fill initial confirmed travel history for existing customer
+            const initialHistory = [
+              {
+                pnr: 'SKY-9182',
+                ticketNo: '724-892140291',
+                flight: FLIGHTS[0], // LHE -> DXB
+                cabin: 'business',
+                passenger: { fullName: 'Hamza Latif', cnic: '31302-5257137-7', phone: '+92 300 1234567' },
+                seat: '3A (Lie-Flat)',
+                date: '2026-09-10',
+                issueDate: '08/09/2026'
+              }
+            ];
+            setTravelHistory(initialHistory);
+            localStorage.setItem('flywithsky_bookings', JSON.stringify(initialHistory));
           }
         } catch (e) {}
       }, []);
@@ -411,26 +448,11 @@
         if (matches.length > 0) {
           setAvailableFlights(matches);
         } else {
-          setAvailableFlights([
-            {
-              id: `SKY-${originIata}${destIata}`,
-              flightNumber: 'SKY 880',
-              origin: AIRPORTS.find((a) => a.iata === originIata) || AIRPORTS[0],
-              destination: AIRPORTS.find((a) => a.iata === destIata) || AIRPORTS[1],
-              departureTime: '10:00',
-              arrivalTime: '17:30',
-              duration: '7h 30m',
-              aircraft: 'Boeing 777-300ER Flagship',
-              stops: 'Direct Service',
-              priceUSD: { economy: 480, business: 1350, first_suite: 3200 },
-              baggage: '46 kg (2 Pieces) + 7 kg Cabin',
-              meal: 'Haute Halal Multi-Course Catering'
-            }
-          ]);
+          setAvailableFlights(FLIGHTS);
         }
       };
 
-      // Gated Booking Trigger: CANNOT BOOK WITHOUT LOGIN!
+      // Initiate Booking (Mandatory Auth Gated)
       const handleInitiateBooking = (flight) => {
         setSelectedFlight(flight);
         if (!currentUser) {
@@ -441,7 +463,7 @@
         }
       };
 
-      // Issue Confirmed E-Ticket
+      // Issue Confirmed E-Ticket & Save to Customer Permanent History
       const handleIssueTicket = (e) => {
         e.preventDefault();
         const pnr = 'SKY-' + Math.floor(1000 + Math.random() * 9000);
@@ -459,9 +481,61 @@
           issueDate: new Date().toLocaleDateString('en-GB')
         };
 
+        // Update permanent history
+        const updatedHistory = [booking, ...travelHistory];
+        setTravelHistory(updatedHistory);
+        try {
+          localStorage.setItem('flywithsky_bookings', JSON.stringify(updatedHistory));
+        } catch (e) {}
+
         setConfirmedBooking(booking);
         setBookingStep('CONFIRMED');
         window.scrollTo({ top: 250, behavior: 'smooth' });
+      };
+
+      // --- DATA BACKUP & RESTORE ENGINE ---
+      const handleDownloadBackup = () => {
+        const backupData = {
+          airline: 'The Fly With Sky',
+          timestamp: new Date().toISOString(),
+          customerProfile: currentUser,
+          travelHistory: travelHistory,
+          preferences: { currency, lang }
+        };
+
+        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backupData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute('href', dataStr);
+        downloadAnchor.setAttribute('download', `TheFlyWithSky_Backup_${currentUser?.cnic || 'Customer'}_${Date.now()}.json`);
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+        alert(lang === 'ur' ? 'ڈیٹا بیک اپ کامیابی سے ڈاؤنلوڈ ہو گیا ہے!' : 'Customer data backup successfully exported and saved to your device!');
+      };
+
+      const handleRestoreBackup = (e) => {
+        const fileReader = new FileReader();
+        if (e.target.files && e.target.files[0]) {
+          fileReader.readAsText(e.target.files[0], 'UTF-8');
+          fileReader.onload = (event) => {
+            try {
+              const parsed = JSON.parse(event.target.result);
+              if (parsed.customerProfile) {
+                setCurrentUser(parsed.customerProfile);
+                localStorage.setItem('flywithsky_user', JSON.stringify(parsed.customerProfile));
+              }
+              if (parsed.travelHistory && Array.isArray(parsed.travelHistory)) {
+                setTravelHistory(parsed.travelHistory);
+                localStorage.setItem('flywithsky_bookings', JSON.stringify(parsed.travelHistory));
+              }
+              alert(lang === 'ur' ? 'بیک اپ کامیابی سے بحال ہو گیا! تمام پروازیں اور کوائف واپس آ گئے ہیں۔' : 'Backup restored successfully! All past flight records and passenger profile restored.');
+              setIsSideDrawerOpen(false);
+              setCurrentView('DASHBOARD');
+            } catch (err) {
+              alert('Invalid backup file format. Please upload a valid The Fly With Sky JSON backup.');
+            }
+          };
+        }
       };
 
       // WebRTC Camera initialization
@@ -493,7 +567,7 @@
         setTimeout(() => {
           setIsScanning(false);
           setKycStage('FACE');
-        }, 1300);
+        }, 1200);
       };
 
       const handleVerifyFace = () => {
@@ -504,66 +578,112 @@
           setKycDone(true);
           setTimeout(() => {
             stopCamera();
-          }, 1500);
-        }, 1500);
+          }, 1400);
+        }, 1400);
       };
 
       return (
         <div dir={activeLang.dir} className="min-h-screen bg-[#060a14] text-neutral-100 flex flex-col justify-between selection:bg-amber-400 selection:text-black">
-          {/* --- 1. HEADER WITH BRANDING: THE FLY WITH SKY --- */}
-          <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#080d19]/90 backdrop-blur-xl shadow-lg">
+          {/* --- 1. TOP HEADER WITH BRANDING & SIDE DRAWER TRIGGER --- */}
+          <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#080d19]/95 backdrop-blur-xl shadow-lg">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
               {/* Brand Logo & Name */}
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-neutral-950 font-bold shadow-lg shadow-amber-500/25">
-                  <span className="text-xl">✈</span>
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-white">
-                      The Fly With Sky
-                    </span>
-                    <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300 border border-amber-400/30">
-                      FLAGSHIP
-                    </span>
+                {/* SIDE DRAWER TRIGGER BUTTON (سائیڈ مینو بٹن) */}
+                <button
+                  onClick={() => setIsSideDrawerOpen(true)}
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-amber-400 hover:bg-amber-400 hover:text-neutral-950 transition shadow-md"
+                  title="Open Side Menu (سائیڈ مینو کھولیں)"
+                >
+                  <span className="text-xl font-bold">☰</span>
+                </button>
+
+                <div
+                  onClick={() => setCurrentView('MAIN')}
+                  className="flex items-center gap-2.5 cursor-pointer group"
+                >
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-neutral-950 font-bold shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
+                    <span className="text-xl">✈</span>
                   </div>
-                  <p className="text-[11px] text-neutral-400">
-                    {lang === 'ur' ? 'دی فلائی ود سکائی • شاہی عالمی پروازیں' : 'Luxury Beyond Horizons'}
-                  </p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-white">
+                        The Fly With Sky
+                      </span>
+                      <span className="hidden sm:inline-block rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300 border border-amber-400/30">
+                        FLAGSHIP
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      {lang === 'ur' ? 'دی فلائی ود سکائی • شاہی عالمی پروازیں' : 'Luxury Beyond Horizons'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Navigation Links */}
-              <nav className="hidden lg:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs font-semibold text-neutral-300 backdrop-blur-md">
-                <a href="#booking" className="rounded-full px-4 py-1.5 hover:text-white hover:bg-white/10 transition">
-                  {lang === 'ur' ? 'پروازیں بک کریں' : 'Book Flights'}
-                </a>
+              {/* Center Menu Switcher: Main Booking vs Customer Dashboard */}
+              <div className="hidden lg:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs font-semibold text-neutral-300 backdrop-blur-md">
+                <button
+                  onClick={() => {
+                    setCurrentView('MAIN');
+                    setBookingStep('SEARCH');
+                  }}
+                  className={`rounded-full px-4 py-1.5 transition ${
+                    currentView === 'MAIN'
+                      ? 'bg-amber-400 text-neutral-950 font-bold shadow-md'
+                      : 'hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {lang === 'ur' ? 'پروازیں بک کریں (Home)' : 'Flight Booking Portal'}
+                </button>
+
+                <button
+                  onClick={() => setCurrentView('DASHBOARD')}
+                  className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 transition ${
+                    currentView === 'DASHBOARD'
+                      ? 'bg-amber-400 text-neutral-950 font-bold shadow-md'
+                      : 'hover:text-amber-300 hover:bg-white/10 text-neutral-200'
+                  }`}
+                >
+                  <span>📊</span>
+                  <span>{lang === 'ur' ? 'کسٹمر ڈیش بورڈ' : 'Customer Dashboard'}</span>
+                  {travelHistory.length > 0 && (
+                    <span className="rounded-full bg-amber-400/30 px-1.5 py-0.2 text-[9px] font-mono text-amber-300">
+                      {travelHistory.length}
+                    </span>
+                  )}
+                </button>
+
                 <a href="#fleet" className="rounded-full px-4 py-1.5 hover:text-white hover:bg-white/10 transition">
-                  {lang === 'ur' ? 'فضائی بیڑہ' : 'Global Fleet Gallery'}
+                  {lang === 'ur' ? 'فضائی بیڑہ' : 'Fleet Showcase'}
                 </a>
-                <a href="#booking" className="rounded-full px-4 py-1.5 hover:text-white hover:bg-white/10 transition">
-                  {lang === 'ur' ? 'روٹس' : 'Popular Routes'}
-                </a>
-              </nav>
+              </div>
 
               {/* Header Controls */}
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* User Session Badge / Login Button */}
+                {/* User Session Badge / Dashboard Opener */}
                 {currentUser ? (
-                  <div className="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs">
-                    <div className="h-7 w-7 rounded-full bg-amber-400 text-neutral-950 font-bold flex items-center justify-center">
-                      {currentUser.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="hidden sm:block text-start leading-tight">
-                      <span className="block font-bold text-white max-w-[130px] truncate">{currentUser.name}</span>
-                      <span className="block font-mono text-[9px] text-amber-300">CNIC: {currentUser.cnic}</span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentView('DASHBOARD')}
+                      className="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs hover:border-amber-400 transition"
+                      title="Open Customer Dashboard"
+                    >
+                      <div className="h-7 w-7 rounded-full bg-amber-400 text-neutral-950 font-bold flex items-center justify-center">
+                        {currentUser.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="hidden sm:block text-start leading-tight">
+                        <span className="block font-bold text-white max-w-[120px] truncate">{currentUser.name}</span>
+                        <span className="block font-mono text-[9px] text-amber-300">CNIC: {currentUser.cnic}</span>
+                      </div>
+                    </button>
+
                     <button
                       onClick={() => {
                         setCurrentUser(null);
                         localStorage.removeItem('flywithsky_user');
                       }}
-                      className="ms-1 text-neutral-400 hover:text-red-400 text-xs font-bold"
+                      className="rounded-xl border border-white/10 bg-white/5 p-2 text-neutral-400 hover:text-red-400 hover:bg-white/10 transition text-xs"
                       title="Sign Out"
                     >
                       ✕
@@ -578,17 +698,14 @@
                   </button>
                 )}
 
-                {/* Live e-KYC Verification Trigger */}
+                {/* Quick Backup Trigger */}
                 <button
-                  onClick={startCamera}
-                  className={`hidden sm:flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold border transition ${
-                    kycDone
-                      ? 'border-emerald-500/50 bg-emerald-950/40 text-emerald-300'
-                      : 'border-cyan-500/40 bg-cyan-950/30 text-cyan-300 hover:bg-cyan-900/40'
-                  }`}
+                  onClick={handleDownloadBackup}
+                  className="hidden md:flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
+                  title="Download Backup of Your Bookings"
                 >
-                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                  <span>{kycDone ? 'ICAO Verified ✓' : 'e-KYC'}</span>
+                  <span>💾</span>
+                  <span>{lang === 'ur' ? 'بیک اپ' : 'Backup'}</span>
                 </button>
 
                 {/* Currency Switcher */}
@@ -604,7 +721,7 @@
                   ))}
                 </select>
 
-                {/* Language Switcher with Flags */}
+                {/* Language Switcher */}
                 <select
                   value={lang}
                   onChange={(e) => handleLanguageChange(e.target.value)}
@@ -620,610 +737,924 @@
             </div>
           </header>
 
-          {/* --- 2. HERO LUXURY SECTION --- */}
-          <section id="hero" className="relative py-12 lg:py-16 px-4 text-center border-b border-white/10 bg-gradient-to-b from-[#080d19] to-[#060a14]">
-            <div className="max-w-4xl mx-auto">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1 text-xs font-bold text-amber-300 mb-4 shadow-md">
-                <span>✦ The Fly With Sky — Flagship Global Aviation ✦</span>
-              </div>
-
-              <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
-                {lang === 'ur' ? 'دی فلائی ود سکائی — ایک باوقار سفر کا آغاز' : 'Fly with Grace, Luxury & Complete Ease'}
-              </h1>
-
-              <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
-                {lang === 'ur'
-                  ? 'لاہور، کراچی، اسلام آباد، دبئی، نیویارک اور لندن کے لیے پریمیئر پروازیں سب سے شفاف کرایوں اور شاہی انداز میں بک کریں۔'
-                  : 'Experience intercontinental flagship routes connecting Lahore, Karachi, Islamabad, Dubai, New York, and London with effortless digital booking.'}
-              </p>
-
-              {/* Fast Route Pills */}
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
-                <span className="text-xs text-neutral-400 me-1">
-                  {lang === 'ur' ? 'تیز ترین روٹس:' : 'Instant Route Selector:'}
-                </span>
-                <button
-                  onClick={() => handleQuickRoute('LHE', 'DXB')}
-                  className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
-                >
-                  🇵🇰 لاہور ⇄ دبئی 🇦🇪
-                </button>
-                <button
-                  onClick={() => handleQuickRoute('LHE', 'KHI')}
-                  className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
-                >
-                  🇵🇰 لاہور ⇄ کراچی (Domestic Express)
-                </button>
-                <button
-                  onClick={() => handleQuickRoute('LHE', 'JFK')}
-                  className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
-                >
-                  🇵🇰 لاہور ⇄ نیویارک 🇺🇸
-                </button>
-                <button
-                  onClick={() => handleQuickRoute('KHI', 'JFK')}
-                  className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
-                >
-                  🇵🇰 کراچی ⇄ نیویارک 🇺🇸
-                </button>
-                <button
-                  onClick={() => handleQuickRoute('ISB', 'LHR')}
-                  className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
-                >
-                  🇵🇰 اسلام آباد ⇄ لندن 🇬🇧
-                </button>
-              </div>
-            </div>
-          </section>
-
-          {/* --- 3. CORE FLIGHT BOOKING ENGINE --- */}
-          <section id="booking" className="py-10 px-4 max-w-6xl mx-auto w-full">
-            {/* STEP 1: SEARCH & FLIGHT RESULTS */}
-            {bookingStep === 'SEARCH' && (
-              <div className="space-y-6">
-                {/* Search Card */}
-                <div className="rounded-3xl border border-white/15 bg-[#0c1322] p-6 shadow-2xl backdrop-blur-xl">
-                  <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4 mb-5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-serif text-lg sm:text-xl font-bold text-white">
-                        {lang === 'ur' ? 'پرواز تلاش کریں' : 'Search Flagship Flights'}
-                      </span>
+          {/* --- VIEW SWITCHER: MAIN EXPERIENCE vs DEDICATED CUSTOMER DASHBOARD --- */}
+          {currentView === 'DASHBOARD' ? (
+            /* --- 2A. DEDICATED CUSTOMER TRAVEL DASHBOARD VIEW --- */
+            <main className="flex-1 py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full animate-in fade-in">
+              {/* Dashboard Top Banner */}
+              <div className="relative overflow-hidden rounded-3xl border border-amber-400/30 bg-gradient-to-r from-[#0d1629] via-[#101b33] to-[#0d1629] p-6 sm:p-8 shadow-2xl mb-8">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-950 font-bold text-2xl shadow-lg shadow-amber-500/20">
+                      {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'H'}
                     </div>
-
-                    {/* Cabin Class Selection */}
-                    <div className="flex gap-2">
-                      {[
-                        { id: 'economy', label: lang === 'ur' ? 'اکانومی کلاس' : 'Grand Economy' },
-                        { id: 'business', label: lang === 'ur' ? 'بزنس لائی فلیٹ' : 'Business Lie-Flat' },
-                        { id: 'first_suite', label: lang === 'ur' ? 'شاہی فرسٹ سویٹ' : 'Royal First Suite' }
-                      ].map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => setCabin(c.id)}
-                          className={`rounded-2xl px-3.5 py-1.5 text-xs font-semibold transition ${
-                            cabin === c.id
-                              ? 'bg-amber-400 text-neutral-950 font-bold shadow-md shadow-amber-400/20'
-                              : 'border border-white/10 bg-white/5 text-neutral-300 hover:border-white/25'
-                          }`}
-                        >
-                          {c.label}
-                        </button>
-                      ))}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h1 className="font-serif text-2xl sm:text-3xl font-bold text-white">
+                          {currentUser ? currentUser.name : 'Hamza Latif'}
+                        </h1>
+                        <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-bold text-amber-300 border border-amber-400/30">
+                          {lang === 'ur' ? 'وی آئی پی مسافر' : 'VIP Passenger'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-neutral-400 mt-1 font-mono">
+                        CNIC: <span className="text-amber-300 font-bold">{currentUser ? currentUser.cnic : '31302-5257137-7'}</span> • {currentUser ? currentUser.phone : '+92 300 1234567'}
+                      </p>
+                      <div className="flex items-center gap-3 mt-2 text-xs">
+                        <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                          NADRA CNIC Verified ✓
+                        </span>
+                        <span className="text-neutral-500">•</span>
+                        <span className="flex items-center gap-1 text-cyan-300 font-semibold">
+                          ✦ 18,500 SkyMiles Active
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <form onSubmit={handleSearchFlights} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Origin */}
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
-                      <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
-                        {lang === 'ur' ? 'کہاں سے (روانگی)' : 'From (Origin Hub)'}
-                      </label>
-                      <select
-                        value={originIata}
-                        onChange={(e) => setOriginIata(e.target.value)}
-                        className="w-full bg-transparent font-serif font-bold text-white text-base focus:outline-none cursor-pointer"
-                      >
-                        {AIRPORTS.map((a) => (
-                          <option key={a.iata} value={a.iata} className="bg-[#0e1626]">
-                            {a.city} ({a.iata}) - {a.country}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2.5">
+                    <button
+                      onClick={() => {
+                        setCurrentView('MAIN');
+                        setBookingStep('SEARCH');
+                      }}
+                      className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-3 text-xs font-bold text-neutral-950 shadow-lg shadow-amber-400/20 hover:from-amber-300 transition"
+                    >
+                      <span>✈</span>
+                      <span>{lang === 'ur' ? 'نئی پرواز بک کریں' : 'Book New Flight'}</span>
+                    </button>
 
-                    {/* Destination */}
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
-                      <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
-                        {lang === 'ur' ? 'کہاں تک (منزل)' : 'To (Destination Hub)'}
-                      </label>
-                      <select
-                        value={destIata}
-                        onChange={(e) => setDestIata(e.target.value)}
-                        className="w-full bg-transparent font-serif font-bold text-white text-base focus:outline-none cursor-pointer"
-                      >
-                        {AIRPORTS.map((a) => (
-                          <option key={a.iata} value={a.iata} className="bg-[#0e1626]">
-                            {a.city} ({a.iata}) - {a.country}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <button
+                      onClick={handleDownloadBackup}
+                      className="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
+                    >
+                      <span>💾</span>
+                      <span>{lang === 'ur' ? 'ڈیٹا بیک اپ محفوظ کریں' : 'Export Data Backup'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-                    {/* Departure Date */}
-                    <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
-                      <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
-                        {lang === 'ur' ? 'روانگی کی تاریخ' : 'Departure Date'}
-                      </label>
-                      <input
-                        type="date"
-                        value={departDate}
-                        onChange={(e) => setDepartDate(e.target.value)}
-                        className="w-full bg-transparent font-bold text-white text-sm focus:outline-none cursor-pointer"
-                      />
-                    </div>
-
-                    {/* Search Submit Button */}
-                    <div className="flex items-center">
-                      <button
-                        type="submit"
-                        className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-4 text-sm font-bold text-neutral-950 shadow-lg shadow-amber-400/25 hover:from-amber-300 hover:to-amber-400 transition"
-                      >
-                        {lang === 'ur' ? 'پروازیں تلاش کریں' : 'Find Available Flights'}
-                      </button>
-                    </div>
-                  </form>
+              {/* History List */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center px-1">
+                  <h3 className="font-serif text-lg font-bold text-white">
+                    {lang === 'ur' ? 'آپ کی محفوظ شدہ پروازیں اور ہسٹری' : 'Confirmed Flights & Lifetime Travel History'}
+                  </h3>
+                  <span className="text-xs text-amber-300 font-mono">
+                    {travelHistory.length} {lang === 'ur' ? 'ٹکٹس محفوظ ہیں' : 'Records in Secure Vault'}
+                  </span>
                 </div>
 
-                {/* Available Flights List */}
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center px-1">
-                    <h3 className="font-serif text-lg font-bold text-white">
-                      {lang === 'ur'
-                        ? `${AIRPORTS.find(a => a.iata === originIata)?.city} سے ${AIRPORTS.find(a => a.iata === destIata)?.city} کی پروازیں`
-                        : `Scheduled Flagship Flights (${originIata} ➔ ${destIata})`}
-                    </h3>
-                    <span className="text-xs text-amber-300 font-mono">
-                      {availableFlights.length} {lang === 'ur' ? 'پروازیں دستیاب' : 'Direct Services'}
-                    </span>
-                  </div>
+                {travelHistory.map((booking, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0d1629] to-[#070b14] p-6 shadow-xl hover:border-amber-400/40 transition"
+                  >
+                    <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-bold text-neutral-950 bg-amber-400 px-2.5 py-0.5 rounded-lg">
+                            PNR: {booking.pnr}
+                          </span>
+                          <span className="rounded bg-emerald-500/20 text-emerald-400 px-2 py-0.5 text-[10px] font-bold border border-emerald-500/30">
+                            CONFIRMED & CLEARED
+                          </span>
+                          <span className="text-xs text-neutral-400 font-mono">
+                            ETicket: {booking.ticketNo}
+                          </span>
+                        </div>
 
-                  {availableFlights.map((f) => {
-                    const price = f.priceUSD[cabin] || 320;
-
-                    return (
-                      <div
-                        key={f.id}
-                        className="rounded-3xl border border-white/15 bg-[#0d1424] p-6 hover:border-amber-400/40 transition-all shadow-xl"
-                      >
-                        <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="rounded-lg bg-amber-400/20 px-2.5 py-0.5 text-xs font-mono font-bold text-amber-300 border border-amber-400/30">
-                                {f.flightNumber}
-                              </span>
-                              <span className="text-xs text-neutral-200">{f.aircraft}</span>
-                              <span className="rounded-full bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 text-[10px] text-cyan-300 font-medium">
-                                {f.stops}
-                              </span>
-                            </div>
-
-                            <div className="mt-3 flex flex-wrap gap-4 text-xs text-neutral-400">
-                              <span>🧳 {f.baggage}</span>
-                              <span>🍽️ {f.meal}</span>
-                            </div>
-                          </div>
-
-                          {/* Timetable Graphic */}
-                          <div className="flex items-center justify-between gap-8 text-center sm:px-6">
-                            <div>
-                              <span className="font-mono text-2xl font-bold text-white">{f.departureTime}</span>
-                              <span className="block font-bold text-amber-300 text-xs">{f.origin.city} ({f.origin.iata})</span>
-                            </div>
-
-                            <div className="text-xs text-neutral-400">
-                              <span>{f.duration}</span>
-                              <div className="h-[2px] w-24 bg-gradient-to-r from-amber-400 to-cyan-400 my-1 mx-auto"></div>
-                              <span className="text-[9px] text-cyan-300 uppercase tracking-wider">The Fly With Sky</span>
-                            </div>
-
-                            <div>
-                              <span className="font-mono text-2xl font-bold text-white">{f.arrivalTime}</span>
-                              <span className="block font-bold text-cyan-300 text-xs">{f.destination.city} ({f.destination.iata})</span>
-                            </div>
-                          </div>
-
-                          {/* Price & Action */}
-                          <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3 w-full lg:w-auto border-t border-white/10 pt-4 lg:border-t-0 lg:pt-0">
-                            <div className="text-right">
-                              <span className="font-mono text-2xl font-bold text-amber-300">
-                                {curr.format(price)}
-                              </span>
-                              <span className="block text-[10px] text-neutral-400">All Taxes & Gourmet Included</span>
-                            </div>
-
-                            <button
-                              onClick={() => handleInitiateBooking(f)}
-                              className="rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition active:scale-95"
-                            >
-                              {lang === 'ur' ? 'یہ سیٹ بک کریں' : 'Book This Flight ➔'}
-                            </button>
-                          </div>
+                        <div className="mt-3">
+                          <span className="font-serif text-base font-bold text-white">
+                            {booking.flight.origin.city} ({booking.flight.origin.iata}) ➔ {booking.flight.destination.city} ({booking.flight.destination.iata})
+                          </span>
+                          <p className="text-xs text-neutral-400 mt-0.5">
+                            {booking.flight.flightNumber} • {booking.flight.aircraft} • Seat {booking.seat}
+                          </p>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
-            {/* STEP 2: MANDATORY PASSENGER PERSONAL DATA FORM */}
-            {bookingStep === 'PASSENGER_FORM' && (
-              <div className="rounded-3xl border border-amber-400/40 bg-[#0d1424] p-6 sm:p-8 shadow-2xl animate-in fade-in">
-                <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-6">
-                  <div>
-                    <h2 className="font-serif text-2xl font-bold text-white">
-                      {lang === 'ur' ? 'مسافر کی قانونی معلومات (Passenger Identity Form)' : 'Passenger Travel Information'}
-                    </h2>
-                    <p className="text-xs text-neutral-400 mt-1">
-                      {lang === 'ur'
-                        ? 'نادرا شناختی کارڈ اور سفری دستاویزات کے مطابق درست ڈیٹا درج کریں:'
-                        : 'Official manifest verification. Please confirm details as printed on your CNIC / Passport:'}
-                    </p>
+                      <div className="flex items-center gap-6 text-center">
+                        <div>
+                          <span className="font-mono text-xl font-bold text-white">{booking.flight.departureTime}</span>
+                          <span className="block text-[11px] text-amber-300">{booking.flight.origin.iata}</span>
+                        </div>
+                        <div className="text-xs text-neutral-400 font-mono">
+                          <span>{booking.flight.duration}</span>
+                          <div className="h-[2px] w-20 bg-gradient-to-r from-amber-400 to-cyan-400 my-1 mx-auto" />
+                        </div>
+                        <div>
+                          <span className="font-mono text-xl font-bold text-white">{booking.flight.arrivalTime}</span>
+                          <span className="block text-[11px] text-cyan-300">{booking.flight.destination.iata}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            setConfirmedBooking(booking);
+                            setBookingStep('CONFIRMED');
+                            setCurrentView('MAIN');
+                          }}
+                          className="flex items-center gap-2 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-5 py-2.5 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
+                        >
+                          <span>🖨️</span>
+                          <span>{lang === 'ur' ? 'ٹکٹ دیکھیں / پرنٹ کریں' : 'View & Print Ticket'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </main>
+          ) : (
+            /* --- 2B. MAIN FLIGHT BOOKING & FLEET EXPERIENCE VIEW --- */
+            <main className="flex-1">
+              {/* Hero Banner */}
+              <section id="hero" className="relative py-12 lg:py-16 px-4 text-center border-b border-white/10 bg-gradient-to-b from-[#080d19] to-[#060a14]">
+                <div className="max-w-4xl mx-auto">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1 text-xs font-bold text-amber-300 mb-4 shadow-md">
+                    <span>✦ The Fly With Sky — Flagship Global Aviation ✦</span>
                   </div>
 
-                  <button
-                    onClick={() => setBookingStep('SEARCH')}
-                    className="rounded-2xl border border-white/15 px-4 py-2 text-xs text-neutral-300 hover:bg-white/5"
-                  >
-                    ← {lang === 'ur' ? 'پرواز تبدیل کریں' : 'Change Flight'}
-                  </button>
-                </div>
+                  <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
+                    {lang === 'ur' ? 'دی فلائی ود سکائی — ایک باوقار سفر کا آغاز' : 'Fly with Grace, Luxury & Complete Ease'}
+                  </h1>
 
-                {/* Selected Flight Summary */}
-                <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 flex flex-wrap justify-between items-center text-xs">
-                  <div>
-                    <span className="font-mono font-bold text-amber-300 text-sm">{selectedFlight.flightNumber}</span>
-                    <span className="ms-2 font-bold text-white">
-                      {selectedFlight.origin.city} ({selectedFlight.origin.iata}) ➔ {selectedFlight.destination.city} ({selectedFlight.destination.iata})
+                  <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
+                    {lang === 'ur'
+                      ? 'لاہور، کراچی، اسلام آباد، دبئی، نیویارک اور لندن کے لیے پریمیئر پروازیں سب سے شفاف کرایوں اور شاہی انداز میں بک کریں۔'
+                      : 'Experience intercontinental flagship routes connecting Lahore, Karachi, Islamabad, Dubai, New York, and London with effortless digital booking.'}
+                  </p>
+
+                  {/* Fast Route Pills */}
+                  <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+                    <span className="text-xs text-neutral-400 me-1">
+                      {lang === 'ur' ? 'تیز ترین روٹس:' : 'Instant Route Selector:'}
                     </span>
-                    <span className="ms-2 text-neutral-400">({selectedFlight.duration})</span>
-                  </div>
-                  <div className="font-mono text-base font-bold text-amber-300">
-                    {curr.format(selectedFlight.priceUSD[cabin])}
+                    <button
+                      onClick={() => handleQuickRoute('LHE', 'DXB')}
+                      className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
+                    >
+                      🇵🇰 لاہور ⇄ دبئی 🇦🇪
+                    </button>
+                    <button
+                      onClick={() => handleQuickRoute('LHE', 'KHI')}
+                      className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
+                    >
+                      🇵🇰 لاہور ⇄ کراچی (Domestic Express)
+                    </button>
+                    <button
+                      onClick={() => handleQuickRoute('LHE', 'JFK')}
+                      className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
+                    >
+                      🇵🇰 لاہور ⇄ نیویارک 🇺🇸
+                    </button>
+                    <button
+                      onClick={() => handleQuickRoute('KHI', 'JFK')}
+                      className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
+                    >
+                      🇵🇰 کراچی ⇄ نیویارک 🇺🇸
+                    </button>
+                    <button
+                      onClick={() => handleQuickRoute('ISB', 'LHR')}
+                      className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-xs text-neutral-200 hover:border-amber-400 hover:text-amber-300 transition"
+                    >
+                      🇵🇰 اسلام آباد ⇄ لندن 🇬🇧
+                    </button>
                   </div>
                 </div>
+              </section>
 
-                <form onSubmit={handleIssueTicket} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        1. {lang === 'ur' ? 'پورا قانونی نام (پاسپورٹ / شناختی کارڈ کے مطابق) *' : 'Full Legal Name (as on Passport/CNIC) *'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={passengerForm.fullName}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, fullName: e.target.value })}
-                        placeholder="e.g. Hamza Latif"
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
-                      />
+              {/* Core Flight Booking Section */}
+              <section id="booking" className="py-10 px-4 max-w-6xl mx-auto w-full">
+                {/* STEP 1: SEARCH & FLIGHT RESULTS */}
+                {bookingStep === 'SEARCH' && (
+                  <div className="space-y-6">
+                    {/* Search Card */}
+                    <div className="rounded-3xl border border-white/15 bg-[#0c1322] p-6 shadow-2xl backdrop-blur-xl">
+                      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4 mb-5">
+                        <span className="font-serif text-lg sm:text-xl font-bold text-white">
+                          {lang === 'ur' ? 'پرواز تلاش کریں' : 'Search Flagship Flights'}
+                        </span>
+
+                        {/* Cabin Class Selection */}
+                        <div className="flex gap-2">
+                          {[
+                            { id: 'economy', label: lang === 'ur' ? 'اکانومی کلاس' : 'Grand Economy' },
+                            { id: 'business', label: lang === 'ur' ? 'بزنس لائی فلیٹ' : 'Business Lie-Flat' },
+                            { id: 'first_suite', label: lang === 'ur' ? 'شاہی فرسٹ سویٹ' : 'Royal First Suite' }
+                          ].map((c) => (
+                            <button
+                              key={c.id}
+                              onClick={() => setCabin(c.id)}
+                              className={`rounded-2xl px-3.5 py-1.5 text-xs font-semibold transition ${
+                                cabin === c.id
+                                  ? 'bg-amber-400 text-neutral-950 font-bold shadow-md shadow-amber-400/20'
+                                  : 'border border-white/10 bg-white/5 text-neutral-300 hover:border-white/25'
+                              }`}
+                            >
+                              {c.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <form onSubmit={handleSearchFlights} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* Origin */}
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                          <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
+                            {lang === 'ur' ? 'کہاں سے (روانگی)' : 'From (Origin Hub)'}
+                          </label>
+                          <select
+                            value={originIata}
+                            onChange={(e) => setOriginIata(e.target.value)}
+                            className="w-full bg-transparent font-serif font-bold text-white text-base focus:outline-none cursor-pointer"
+                          >
+                            {AIRPORTS.map((a) => (
+                              <option key={a.iata} value={a.iata} className="bg-[#0e1626]">
+                                {a.city} ({a.iata}) - {a.country}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Destination */}
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                          <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
+                            {lang === 'ur' ? 'کہاں تک (منزل)' : 'To (Destination Hub)'}
+                          </label>
+                          <select
+                            value={destIata}
+                            onChange={(e) => setDestIata(e.target.value)}
+                            className="w-full bg-transparent font-serif font-bold text-white text-base focus:outline-none cursor-pointer"
+                          >
+                            {AIRPORTS.map((a) => (
+                              <option key={a.iata} value={a.iata} className="bg-[#0e1626]">
+                                {a.city} ({a.iata}) - {a.country}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Departure Date */}
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-3.5">
+                          <label className="block text-[11px] font-semibold text-neutral-400 mb-1">
+                            {lang === 'ur' ? 'روانگی کی تاریخ' : 'Departure Date'}
+                          </label>
+                          <input
+                            type="date"
+                            value={departDate}
+                            onChange={(e) => setDepartDate(e.target.value)}
+                            className="w-full bg-transparent font-bold text-white text-sm focus:outline-none cursor-pointer"
+                          />
+                        </div>
+
+                        {/* Search Submit Button */}
+                        <div className="flex items-center">
+                          <button
+                            type="submit"
+                            className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-4 text-sm font-bold text-neutral-950 shadow-lg shadow-amber-400/25 hover:from-amber-300 hover:to-amber-400 transition"
+                          >
+                            {lang === 'ur' ? 'پروازیں تلاش کریں' : 'Find Available Flights'}
+                          </button>
+                        </div>
+                      </form>
                     </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        2. {lang === 'ur' ? 'قومی شناختی کارڈ نمبر (CNIC) *' : 'CNIC / National Identity Card Number *'}
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={passengerForm.cnic}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, cnic: e.target.value })}
-                        placeholder="35201-1234567-1"
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-mono text-white focus:border-amber-400 focus:outline-none"
-                      />
+                    {/* Available Flights List */}
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center px-1">
+                        <h3 className="font-serif text-lg font-bold text-white">
+                          {lang === 'ur'
+                            ? `${AIRPORTS.find(a => a.iata === originIata)?.city} سے ${AIRPORTS.find(a => a.iata === destIata)?.city} کی پروازیں`
+                            : `Scheduled Flagship Flights (${originIata} ➔ ${destIata})`}
+                        </h3>
+                        <span className="text-xs text-amber-300 font-mono">
+                          {availableFlights.length} {lang === 'ur' ? 'پروازیں دستیاب' : 'Direct Services'}
+                        </span>
+                      </div>
+
+                      {availableFlights.map((f) => {
+                        const price = f.priceUSD[cabin] || 320;
+
+                        return (
+                          <div
+                            key={f.id}
+                            className="rounded-3xl border border-white/15 bg-[#0d1424] p-6 hover:border-amber-400/40 transition-all shadow-xl"
+                          >
+                            <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="rounded-lg bg-amber-400/20 px-2.5 py-0.5 text-xs font-mono font-bold text-amber-300 border border-amber-400/30">
+                                    {f.flightNumber}
+                                  </span>
+                                  <span className="text-xs text-neutral-200">{f.aircraft}</span>
+                                  <span className="rounded-full bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 text-[10px] text-cyan-300 font-medium">
+                                    {f.stops}
+                                  </span>
+                                </div>
+
+                                <div className="mt-3 flex flex-wrap gap-4 text-xs text-neutral-400">
+                                  <span>🧳 {f.baggage}</span>
+                                  <span>🍽️ {f.meal}</span>
+                                </div>
+                              </div>
+
+                              {/* Timetable Graphic */}
+                              <div className="flex items-center justify-between gap-8 text-center sm:px-6">
+                                <div>
+                                  <span className="font-mono text-2xl font-bold text-white">{f.departureTime}</span>
+                                  <span className="block font-bold text-amber-300 text-xs">{f.origin.city} ({f.origin.iata})</span>
+                                </div>
+
+                                <div className="text-xs text-neutral-400">
+                                  <span>{f.duration}</span>
+                                  <div className="h-[2px] w-24 bg-gradient-to-r from-amber-400 to-cyan-400 my-1 mx-auto"></div>
+                                  <span className="text-[9px] text-cyan-300 uppercase tracking-wider">The Fly With Sky</span>
+                                </div>
+
+                                <div>
+                                  <span className="font-mono text-2xl font-bold text-white">{f.arrivalTime}</span>
+                                  <span className="block font-bold text-cyan-300 text-xs">{f.destination.city} ({f.destination.iata})</span>
+                                </div>
+                              </div>
+
+                              {/* Price & Action */}
+                              <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3 w-full lg:w-auto border-t border-white/10 pt-4 lg:border-t-0 lg:pt-0">
+                                <div className="text-right">
+                                  <span className="font-mono text-2xl font-bold text-amber-300">
+                                    {curr.format(price)}
+                                  </span>
+                                  <span className="block text-[10px] text-neutral-400">All Taxes & Gourmet Included</span>
+                                </div>
+
+                                <button
+                                  onClick={() => handleInitiateBooking(f)}
+                                  className="rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition active:scale-95"
+                                >
+                                  {lang === 'ur' ? 'یہ سیٹ بک کریں' : 'Book This Flight ➔'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        3. {lang === 'ur' ? 'موبائل نمبر (SMS و WhatsApp الرٹس) *' : 'Mobile Phone Number (for PNR SMS Alerts) *'}
-                      </label>
-                      <input
-                        type="tel"
-                        required
-                        value={passengerForm.phone}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, phone: e.target.value })}
-                        placeholder="+92 300 1234567"
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
-                      />
-                    </div>
+                {/* STEP 2: MANDATORY PASSENGER PERSONAL DATA FORM */}
+                {bookingStep === 'PASSENGER_FORM' && (
+                  <div className="rounded-3xl border border-amber-400/40 bg-[#0d1424] p-6 sm:p-8 shadow-2xl animate-in fade-in">
+                    <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-6">
+                      <div>
+                        <h2 className="font-serif text-2xl font-bold text-white">
+                          {lang === 'ur' ? 'مسافر کی قانونی معلومات (Passenger Identity Form)' : 'Passenger Travel Information'}
+                        </h2>
+                        <p className="text-xs text-neutral-400 mt-1">
+                          {lang === 'ur'
+                            ? 'نادرا شناختی کارڈ اور سفری دستاویزات کے مطابق درست ڈیٹا درج کریں:'
+                            : 'Official manifest verification. Please confirm details as printed on your CNIC / Passport:'}
+                        </p>
+                      </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        4. {lang === 'ur' ? 'ای میل ایڈریس *' : 'Email Address (for E-Ticket PDF) *'}
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={passengerForm.email}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, email: e.target.value })}
-                        placeholder="passenger@flywithsky.com"
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        5. {lang === 'ur' ? 'پاسپورٹ نمبر' : 'Passport Number (International Routes)'}
-                      </label>
-                      <input
-                        type="text"
-                        value={passengerForm.passportNumber}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, passportNumber: e.target.value })}
-                        placeholder="PK892104"
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        6. {lang === 'ur' ? 'تاریخِ پیدائش' : 'Date of Birth'}
-                      </label>
-                      <input
-                        type="date"
-                        value={passengerForm.dob}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, dob: e.target.value })}
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none cursor-pointer"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-200 mb-1">
-                        7. {lang === 'ur' ? 'جنس' : 'Gender'}
-                      </label>
-                      <select
-                        value={passengerForm.gender}
-                        onChange={(e) => setPassengerForm({ ...passengerForm, gender: e.target.value })}
-                        className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none cursor-pointer"
+                      <button
+                        onClick={() => setBookingStep('SEARCH')}
+                        className="rounded-2xl border border-white/15 px-4 py-2 text-xs text-neutral-300 hover:bg-white/5"
                       >
-                        <option value="Male" className="bg-[#0e1626]">Male (مرد)</option>
-                        <option value="Female" className="bg-[#0e1626]">Female (خاتون)</option>
-                      </select>
+                        ← {lang === 'ur' ? 'پرواز تبدیل کریں' : 'Change Flight'}
+                      </button>
+                    </div>
+
+                    {/* Selected Flight Summary */}
+                    <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4 flex flex-wrap justify-between items-center text-xs">
+                      <div>
+                        <span className="font-mono font-bold text-amber-300 text-sm">{selectedFlight.flightNumber}</span>
+                        <span className="ms-2 font-bold text-white">
+                          {selectedFlight.origin.city} ({selectedFlight.origin.iata}) ➔ {selectedFlight.destination.city} ({selectedFlight.destination.iata})
+                        </span>
+                        <span className="ms-2 text-neutral-400">({selectedFlight.duration})</span>
+                      </div>
+                      <div className="font-mono text-base font-bold text-amber-300">
+                        {curr.format(selectedFlight.priceUSD[cabin])}
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleIssueTicket} className="space-y-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            1. {lang === 'ur' ? 'پورا قانونی نام (پاسپورٹ / شناختی کارڈ کے مطابق) *' : 'Full Legal Name (as on Passport/CNIC) *'}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={passengerForm.fullName}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, fullName: e.target.value })}
+                            placeholder="e.g. Hamza Latif"
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            2. {lang === 'ur' ? 'قومی شناختی کارڈ نمبر (CNIC) *' : 'CNIC / National Identity Card Number *'}
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={passengerForm.cnic}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, cnic: e.target.value })}
+                            placeholder="31302-5257137-7"
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-mono text-white focus:border-amber-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            3. {lang === 'ur' ? 'موبائل نمبر (SMS و WhatsApp الرٹس) *' : 'Mobile Phone Number (for PNR SMS Alerts) *'}
+                          </label>
+                          <input
+                            type="tel"
+                            required
+                            value={passengerForm.phone}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, phone: e.target.value })}
+                            placeholder="+92 300 1234567"
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            4. {lang === 'ur' ? 'ای میل ایڈریس *' : 'Email Address (for E-Ticket PDF) *'}
+                          </label>
+                          <input
+                            type="email"
+                            required
+                            value={passengerForm.email}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, email: e.target.value })}
+                            placeholder="hamza.latif@flywithsky.com"
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            5. {lang === 'ur' ? 'پاسپورٹ نمبر' : 'Passport Number (International Routes)'}
+                          </label>
+                          <input
+                            type="text"
+                            value={passengerForm.passportNumber}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, passportNumber: e.target.value })}
+                            placeholder="PK892104"
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            6. {lang === 'ur' ? 'تاریخِ پیدائش' : 'Date of Birth'}
+                          </label>
+                          <input
+                            type="date"
+                            value={passengerForm.dob}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, dob: e.target.value })}
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none cursor-pointer"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-neutral-200 mb-1">
+                            7. {lang === 'ur' ? 'جنس' : 'Gender'}
+                          </label>
+                          <select
+                            value={passengerForm.gender}
+                            onChange={(e) => setPassengerForm({ ...passengerForm, gender: e.target.value })}
+                            className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none cursor-pointer"
+                          >
+                            <option value="Male" className="bg-[#0e1626]">Male (مرد)</option>
+                            <option value="Female" className="bg-[#0e1626]">Female (خاتون)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-neutral-200 mb-1">
+                          8. {lang === 'ur' ? 'کھانے کی ترجیح' : 'In-Flight Dining Preference'}
+                        </label>
+                        <select
+                          value={passengerForm.meal}
+                          onChange={(e) => setPassengerForm({ ...passengerForm, meal: e.target.value })}
+                          className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none cursor-pointer"
+                        >
+                          <option value="Halal Special Biryani" className="bg-[#0e1626]">Halal Special Chicken Biryani (حلال سپیشل بریانی)</option>
+                          <option value="Mutton Karahi Gourmet" className="bg-[#0e1626]">Mutton Karahi with Fresh Naan (مٹن کڑاہی مع نان)</option>
+                          <option value="Vegetarian Meal" className="bg-[#0e1626]">Vegetarian Delicacy (ویجیٹیرین کھانا)</option>
+                          <option value="Diabetic Meal" className="bg-[#0e1626]">Diabetic / Low-Sodium Meal (شوگر فری کھانا)</option>
+                        </select>
+                      </div>
+
+                      <div className="pt-4 flex justify-end gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setBookingStep('SEARCH')}
+                          className="rounded-2xl border border-white/15 px-6 py-3 text-xs text-neutral-300 hover:bg-white/5"
+                        >
+                          {lang === 'ur' ? 'منسوخ کریں' : 'Cancel'}
+                        </button>
+
+                        <button
+                          type="submit"
+                          className="rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-8 py-3.5 text-sm font-bold text-neutral-950 shadow-lg shadow-amber-400/25 hover:from-amber-300 transition"
+                        >
+                          {lang === 'ur' ? 'ٹکٹ جاری کریں اور محفوظ کریں ➔' : 'Confirm Reservation & Issue E-Ticket ➔'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* STEP 3: CONFIRMED E-TICKET VOUCHER & BOARDING PASS */}
+                {bookingStep === 'CONFIRMED' && confirmedBooking && (
+                  <div id="printable-ticket" className="rounded-3xl border border-emerald-500/40 bg-[#0d1424] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
+                    <div className="text-center mb-6">
+                      <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2 text-2xl font-bold">
+                        ✓
+                      </div>
+                      <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
+                        {lang === 'ur' ? 'مبارک ہو! آپ کا ای ٹکٹ جاری اور محفوظ ہو گیا ہے' : 'Reservation Cleared! Electronic Ticket Issued'}
+                      </h2>
+                      <p className="text-xs text-neutral-300 mt-1">
+                        {lang === 'ur' ? 'آپ کی تمام تفصیلات مستقل طور پر آپ کے ڈیش بورڈ میں محفوظ کر دی گئی ہیں۔' : 'Your cryptographic pass is ready and permanently preserved in your Customer Dashboard.'}
+                      </p>
+                    </div>
+
+                    {/* Ticket Body */}
+                    <div className="rounded-2xl border border-amber-400/40 bg-[#121929] p-6 shadow-inner text-sm">
+                      <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-4">
+                        <div>
+                          <span className="font-serif text-xl font-bold text-amber-300">The Fly With Sky</span>
+                          <span className="block text-xs text-neutral-400">OFFICIAL ELECTRONIC TRAVEL VOUCHER</span>
+                        </div>
+                        <div className="text-end font-mono">
+                          <span className="text-xs text-neutral-400 block">BOOKING REF (PNR)</span>
+                          <span className="text-lg font-bold text-neutral-950 bg-amber-400 px-3 py-1 rounded-xl">
+                            {confirmedBooking.pnr}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-b border-white/10 pb-4 mb-4">
+                        <div>
+                          <span className="text-xs text-neutral-400 block">PASSENGER NAME:</span>
+                          <span className="font-bold text-white">{confirmedBooking.passenger.fullName}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-neutral-400 block">CNIC / NATIONAL ID:</span>
+                          <span className="font-mono font-bold text-amber-300">{confirmedBooking.passenger.cnic}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-neutral-400 block">FLIGHT NUMBER:</span>
+                          <span className="font-bold text-cyan-300">{confirmedBooking.flight.flightNumber}</span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-neutral-400 block">SEAT & CABIN:</span>
+                          <span className="font-bold text-white">{confirmedBooking.seat}</span>
+                        </div>
+                      </div>
+
+                      {/* Flight Segment */}
+                      <div className="my-6 flex justify-between items-center text-center">
+                        <div>
+                          <span className="font-mono text-3xl font-bold text-white">{confirmedBooking.flight.origin.iata}</span>
+                          <span className="block text-xs text-neutral-300">{confirmedBooking.flight.origin.city}</span>
+                          <span className="font-mono text-sm text-amber-300 mt-1 block">{confirmedBooking.flight.departureTime}</span>
+                        </div>
+
+                        <div className="text-xs font-mono text-cyan-300">
+                          <span>{confirmedBooking.flight.duration}</span>
+                          <div className="h-[2px] w-32 bg-gradient-to-r from-amber-400 to-cyan-400 my-1 mx-auto"></div>
+                          <span>{confirmedBooking.flight.aircraft}</span>
+                        </div>
+
+                        <div>
+                          <span className="font-mono text-3xl font-bold text-white">{confirmedBooking.flight.destination.iata}</span>
+                          <span className="block text-xs text-neutral-300">{confirmedBooking.flight.destination.city}</span>
+                          <span className="font-mono text-sm text-cyan-300 mt-1 block">{confirmedBooking.flight.arrivalTime}</span>
+                        </div>
+                      </div>
+
+                      {/* QR Code & Footer */}
+                      <div className="flex flex-col sm:flex-row items-center justify-between border-t border-dashed border-white/20 pt-4 gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="h-20 w-20 bg-white p-1.5 rounded-2xl">
+                            <svg viewBox="0 0 100 100" className="w-full h-full">
+                              <rect width="100" height="100" fill="white" />
+                              <rect x="5" y="5" width="30" height="30" fill="#060a14" />
+                              <rect x="10" y="10" width="20" height="20" fill="white" />
+                              <rect x="14" y="14" width="12" height="12" fill="#060a14" />
+                              <rect x="65" y="5" width="30" height="30" fill="#060a14" />
+                              <rect x="70" y="10" width="20" height="20" fill="white" />
+                              <rect x="74" y="14" width="12" height="12" fill="#060a14" />
+                              <rect x="5" y="65" width="30" height="30" fill="#060a14" />
+                              <rect x="10" y="70" width="20" height="20" fill="white" />
+                              <rect x="14" y="74" width="12" height="12" fill="#060a14" />
+                              <rect x="42" y="42" width="16" height="16" fill="#060a14" />
+                            </svg>
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-white block">DIGITAL BOARDING PASS QR</span>
+                            <span className="text-[11px] font-mono text-neutral-400">ETICKET: {confirmedBooking.ticketNo}</span>
+                            <span className="text-[11px] text-amber-300 block">Gate: A12 (Priority Boarding)</span>
+                          </div>
+                        </div>
+
+                        <div className="text-end font-mono text-xs text-neutral-400">
+                          <span>ISSUED: {confirmedBooking.issueDate}</span>
+                          <span className="block text-emerald-400 font-bold">STATUS: FLIGHT CLEARED</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 flex flex-wrap justify-between items-center gap-3">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setBookingStep('SEARCH')}
+                          className="rounded-2xl border border-white/15 px-5 py-2.5 text-xs text-neutral-300 hover:bg-white/5"
+                        >
+                          {lang === 'ur' ? 'نئی پرواز تلاش کریں' : 'Search New Flight'}
+                        </button>
+
+                        <button
+                          onClick={() => setCurrentView('DASHBOARD')}
+                          className="rounded-2xl border border-amber-400/40 bg-amber-400/10 px-5 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20"
+                        >
+                          {lang === 'ur' ? 'کسٹمر ڈیش بورڈ دیکھیں' : 'View in Customer Dashboard'}
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => window.print()}
+                        className="rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
+                      >
+                        {lang === 'ur' ? 'ٹکٹ پرنٹ کریں / پی ڈی ایف محفوظ کریں' : 'Print Official Ticket (PDF)'}
+                      </button>
                     </div>
                   </div>
+                )}
+              </section>
 
-                  <div>
-                    <label className="block text-xs font-bold text-neutral-200 mb-1">
-                      8. {lang === 'ur' ? 'کھانے کی ترجیح' : 'In-Flight Dining Preference'}
-                    </label>
-                    <select
-                      value={passengerForm.meal}
-                      onChange={(e) => setPassengerForm({ ...passengerForm, meal: e.target.value })}
-                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white focus:border-amber-400 focus:outline-none cursor-pointer"
-                    >
-                      <option value="Halal Special Biryani" className="bg-[#0e1626]">Halal Special Chicken Biryani (حلال سپیشل بریانی)</option>
-                      <option value="Mutton Karahi Gourmet" className="bg-[#0e1626]">Mutton Karahi with Fresh Naan (مٹن کڑاہی مع نان)</option>
-                      <option value="Vegetarian Meal" className="bg-[#0e1626]">Vegetarian Delicacy (ویجیٹیرین کھانا)</option>
-                      <option value="Diabetic Meal" className="bg-[#0e1626]">Diabetic / Low-Sodium Meal (شوگر فری کھانا)</option>
-                    </select>
+              {/* Global Aircraft Fleet Gallery */}
+              <section id="fleet" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10 w-full">
+                <div className="text-center max-w-3xl mx-auto mb-10">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-bold text-amber-300 mb-3 shadow-md">
+                    <span>✦ WORLD-CLASS LIVERY SHOWCASE ✦</span>
                   </div>
-
-                  <div className="pt-4 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setBookingStep('SEARCH')}
-                      className="rounded-2xl border border-white/15 px-6 py-3 text-xs text-neutral-300 hover:bg-white/5"
-                    >
-                      {lang === 'ur' ? 'منسوخ کریں' : 'Cancel'}
-                    </button>
-
-                    <button
-                      type="submit"
-                      className="rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-8 py-3.5 text-sm font-bold text-neutral-950 shadow-lg shadow-amber-400/25 hover:from-amber-300 transition"
-                    >
-                      {lang === 'ur' ? 'ٹکٹ جاری کریں اور بورڈنگ پاس حاصل کریں ➔' : 'Confirm Reservation & Issue E-Ticket ➔'}
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* STEP 3: CONFIRMED E-TICKET VOUCHER & BOARDING PASS */}
-            {bookingStep === 'CONFIRMED' && confirmedBooking && (
-              <div id="printable-ticket" className="rounded-3xl border border-emerald-500/40 bg-[#0d1424] p-6 sm:p-8 shadow-2xl animate-in zoom-in-95">
-                <div className="text-center mb-6">
-                  <div className="h-12 w-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2 text-2xl font-bold">
-                    ✓
-                  </div>
-                  <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">
-                    {lang === 'ur' ? 'مبارک ہو! آپ کا ای ٹکٹ جاری ہو گیا ہے' : 'Reservation Cleared! Electronic Ticket Issued'}
+                  <h2 className="font-serif text-3xl sm:text-4xl font-bold text-white">
+                    {lang === 'ur' ? 'عالمی فضائی بیڑہ اور قومی ایئرلائن ڈیزائنز' : 'Global Aircraft Fleet Gallery'}
                   </h2>
-                  <p className="text-xs text-neutral-300 mt-1">
-                    {lang === 'ur' ? 'آپ کا آفیشل بورڈنگ پاس اور بکنگ ریفرنس محفوظ کر لیا گیا ہے۔' : 'Your cryptographic pass is ready for check-in and priority boarding.'}
+                  <p className="mt-2 text-sm text-neutral-300">
+                    {lang === 'ur'
+                      ? 'پاکستان، امارات، سعودی عرب، برطانیہ، امریکہ، فرانس اور ترکیہ کے مستند طیاروں کے ساتھ پرواز کریں۔'
+                      : 'Experience intercontinental flights operated with official country airline liveries and country flags.'}
                   </p>
                 </div>
 
-                {/* Ticket Body */}
-                <div className="rounded-2xl border border-amber-400/40 bg-[#121929] p-6 shadow-inner text-sm">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-4">
-                    <div>
-                      <span className="font-serif text-xl font-bold text-amber-300">The Fly With Sky</span>
-                      <span className="block text-xs text-neutral-400">OFFICIAL ELECTRONIC TRAVEL VOUCHER</span>
-                    </div>
-                    <div className="text-end font-mono">
-                      <span className="text-xs text-neutral-400 block">BOOKING REF (PNR)</span>
-                      <span className="text-lg font-bold text-neutral-950 bg-amber-400 px-3 py-1 rounded-xl">
-                        {confirmedBooking.pnr}
-                      </span>
-                    </div>
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {FLEET_ITEMS.map((plane) => (
+                    <div
+                      key={plane.id}
+                      className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0d1527] to-[#070b14] overflow-hidden shadow-xl hover:border-amber-400/50 hover:shadow-amber-500/10 transition-all flex flex-col justify-between"
+                    >
+                      <div className="relative aspect-[16/10] w-full overflow-hidden">
+                        <img src={plane.image} alt={plane.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <div className="absolute top-3 start-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 backdrop-blur-md px-3 py-1 text-xs font-semibold text-white">
+                          <span className="text-base">{plane.flag}</span>
+                          <span>{plane.country}</span>
+                        </div>
+                      </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 border-b border-white/10 pb-4 mb-4">
-                    <div>
-                      <span className="text-xs text-neutral-400 block">PASSENGER NAME:</span>
-                      <span className="font-bold text-white">{confirmedBooking.passenger.fullName}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-neutral-400 block">CNIC / NATIONAL ID:</span>
-                      <span className="font-mono font-bold text-amber-300">{confirmedBooking.passenger.cnic}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-neutral-400 block">FLIGHT NUMBER:</span>
-                      <span className="font-bold text-cyan-300">{confirmedBooking.flight.flightNumber}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs text-neutral-400 block">SEAT & CABIN:</span>
-                      <span className="font-bold text-white">{confirmedBooking.seat}</span>
-                    </div>
-                  </div>
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <span className="inline-block rounded-md bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 mb-1.5">
+                            {plane.badge}
+                          </span>
+                          <h3 className="font-serif text-lg font-bold text-white mb-1">
+                            {plane.name}
+                          </h3>
+                          <p className="text-xs font-semibold text-cyan-300 mb-2">
+                            {plane.airlineLivery}
+                          </p>
+                          <p className="text-xs text-neutral-300 leading-relaxed mb-4">
+                            {plane.description}
+                          </p>
 
-                  {/* Flight Segment */}
-                  <div className="my-6 flex justify-between items-center text-center">
-                    <div>
-                      <span className="font-mono text-3xl font-bold text-white">{confirmedBooking.flight.origin.iata}</span>
-                      <span className="block text-xs text-neutral-300">{confirmedBooking.flight.origin.city}</span>
-                      <span className="font-mono text-sm text-amber-300 mt-1 block">{confirmedBooking.flight.departureTime}</span>
-                    </div>
+                          <div className="space-y-1.5 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-xs text-neutral-400">
+                            <div className="flex justify-between">
+                              <span>Seating:</span>
+                              <span className="font-semibold text-white">{plane.capacity}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Cruising Speed:</span>
+                              <span className="font-mono text-amber-300">{plane.cruiseSpeed}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="text-xs font-mono text-cyan-300">
-                      <span>{confirmedBooking.flight.duration}</span>
-                      <div className="h-[2px] w-32 bg-gradient-to-r from-amber-400 to-cyan-400 my-1 mx-auto"></div>
-                      <span>{confirmedBooking.flight.aircraft}</span>
+                        <button
+                          onClick={() => {
+                            window.scrollTo({ top: 380, behavior: 'smooth' });
+                          }}
+                          className="mt-4 w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
+                        >
+                          {lang === 'ur' ? 'اس طیارے میں پرواز منتخب کریں ➔' : 'Fly with this Aircraft ➔'}
+                        </button>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </section>
+            </main>
+          )}
 
-                    <div>
-                      <span className="font-mono text-3xl font-bold text-white">{confirmedBooking.flight.destination.iata}</span>
-                      <span className="block text-xs text-neutral-300">{confirmedBooking.flight.destination.city}</span>
-                      <span className="font-mono text-sm text-cyan-300 mt-1 block">{confirmedBooking.flight.arrivalTime}</span>
-                    </div>
-                  </div>
+          {/* --- 3. SLIDING POP-UP SIDE DRAWER (سائیڈ پاپ اپ مینو) --- */}
+          {isSideDrawerOpen && (
+            <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
+              <div
+                onClick={() => setIsSideDrawerOpen(false)}
+                className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+              />
 
-                  {/* QR Code & Footer */}
-                  <div className="flex flex-col sm:flex-row items-center justify-between border-t border-dashed border-white/20 pt-4 gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-20 w-20 bg-white p-1.5 rounded-2xl">
-                        <svg viewBox="0 0 100 100" className="w-full h-full">
-                          <rect width="100" height="100" fill="white" />
-                          <rect x="5" y="5" width="30" height="30" fill="#060a14" />
-                          <rect x="10" y="10" width="20" height="20" fill="white" />
-                          <rect x="14" y="14" width="12" height="12" fill="#060a14" />
-                          <rect x="65" y="5" width="30" height="30" fill="#060a14" />
-                          <rect x="70" y="10" width="20" height="20" fill="white" />
-                          <rect x="74" y="14" width="12" height="12" fill="#060a14" />
-                          <rect x="5" y="65" width="30" height="30" fill="#060a14" />
-                          <rect x="10" y="70" width="20" height="20" fill="white" />
-                          <rect x="14" y="74" width="12" height="12" fill="#060a14" />
-                          <rect x="42" y="42" width="16" height="16" fill="#060a14" />
-                        </svg>
+              <div className="relative w-full max-w-sm sm:max-w-md h-full bg-gradient-to-b from-[#090f1d] via-[#0d1629] to-[#070b14] border-s border-amber-400/30 p-6 shadow-2xl flex flex-col justify-between z-10 overflow-y-auto">
+                <div>
+                  {/* Drawer Header */}
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-950 font-bold shadow-lg shadow-amber-500/20">
+                        <span className="text-lg">✈</span>
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-white block">DIGITAL BOARDING PASS QR</span>
-                        <span className="text-[11px] font-mono text-neutral-400">ETICKET: {confirmedBooking.ticketNo}</span>
-                        <span className="text-[11px] text-amber-300 block">Gate: A12 (Priority Boarding)</span>
-                      </div>
-                    </div>
-
-                    <div className="text-end font-mono text-xs text-neutral-400">
-                      <span>ISSUED: {confirmedBooking.issueDate}</span>
-                      <span className="block text-emerald-400 font-bold">STATUS: FLIGHT CLEARED</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex flex-wrap justify-between items-center gap-3">
-                  <button
-                    onClick={() => setBookingStep('SEARCH')}
-                    className="rounded-2xl border border-white/15 px-5 py-2.5 text-xs text-neutral-300 hover:bg-white/5"
-                  >
-                    {lang === 'ur' ? 'نیا ٹکٹ بک کریں' : 'Book Another Flight'}
-                  </button>
-
-                  <button
-                    onClick={() => window.print()}
-                    className="rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-2.5 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
-                  >
-                    {lang === 'ur' ? 'ٹکٹ پرنٹ کریں / پی ڈی ایف محفوظ کریں' : 'Print Official Ticket (PDF)'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-
-          {/* --- 4. GLOBAL AIRCRAFT FLEET GALLERY (COUNTRY LIVERIES) --- */}
-          <section id="fleet" className="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-white/10 w-full">
-            <div className="text-center max-w-3xl mx-auto mb-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-bold text-amber-300 mb-3 shadow-md">
-                <span>✦ WORLD-CLASS LIVERY SHOWCASE ✦</span>
-              </div>
-              <h2 className="font-serif text-3xl sm:text-4xl font-bold text-white">
-                {lang === 'ur' ? 'عالمی فضائی بیڑہ اور قومی ایئرلائن ڈیزائنز' : 'Global Aircraft Fleet Gallery'}
-              </h2>
-              <p className="mt-2 text-sm text-neutral-300">
-                {lang === 'ur'
-                  ? 'پاکستان، امارات، سعودی عرب، برطانیہ، امریکہ، فرانس اور ترکیہ کے مستند طیاروں کے ساتھ پرواز کریں۔'
-                  : 'Experience intercontinental flights operated with official country airline liveries and country flags.'}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {FLEET_ITEMS.map((plane) => (
-                <div
-                  key={plane.id}
-                  className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0d1527] to-[#070b14] overflow-hidden shadow-xl hover:border-amber-400/50 hover:shadow-amber-500/10 transition-all flex flex-col justify-between"
-                >
-                  <div className="relative aspect-[16/10] w-full overflow-hidden">
-                    <img src={plane.image} alt={plane.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute top-3 start-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/60 backdrop-blur-md px-3 py-1 text-xs font-semibold text-white">
-                      <span className="text-base">{plane.flag}</span>
-                      <span>{plane.country}</span>
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      <span className="inline-block rounded-md bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 mb-1.5">
-                        {plane.badge}
-                      </span>
-                      <h3 className="font-serif text-lg font-bold text-white mb-1">
-                        {plane.name}
-                      </h3>
-                      <p className="text-xs font-semibold text-cyan-300 mb-2">
-                        {plane.airlineLivery}
-                      </p>
-                      <p className="text-xs text-neutral-300 leading-relaxed mb-4">
-                        {plane.description}
-                      </p>
-
-                      <div className="space-y-1.5 rounded-2xl border border-white/10 bg-white/[0.02] p-3 text-xs text-neutral-400">
-                        <div className="flex justify-between">
-                          <span>Seating:</span>
-                          <span className="font-semibold text-white">{plane.capacity}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Cruising Speed:</span>
-                          <span className="font-mono text-amber-300">{plane.cruiseSpeed}</span>
-                        </div>
+                        <span className="font-serif text-lg font-bold text-white block">The Fly With Sky</span>
+                        <span className="text-[10px] text-amber-300 font-mono">
+                          {lang === 'ur' ? 'سائیڈ مینو اور ڈیش بورڈ' : 'Side Navigation & Control'}
+                        </span>
                       </div>
                     </div>
 
                     <button
-                      onClick={() => {
-                        window.scrollTo({ top: 380, behavior: 'smooth' });
-                      }}
-                      className="mt-4 w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
+                      onClick={() => setIsSideDrawerOpen(false)}
+                      className="rounded-full p-2 text-neutral-400 hover:text-white hover:bg-white/10 transition"
                     >
-                      {lang === 'ur' ? 'اس طیارے میں پرواز منتخب کریں ➔' : 'Fly with this Aircraft ➔'}
+                      ✕
                     </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
 
-          {/* --- 5. WEBRTC LIVE CAMERA PASSPORT SCANNER MODAL --- */}
+                  {/* Customer Card in Drawer */}
+                  <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-amber-400 text-neutral-950 font-bold flex items-center justify-center text-sm">
+                        {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'H'}
+                      </div>
+                      <div>
+                        <span className="font-bold text-white text-sm block">{currentUser ? currentUser.name : 'Hamza Latif'}</span>
+                        <span className="font-mono text-[10px] text-amber-300 block">
+                          CNIC: {currentUser ? currentUser.cnic : '31302-5257137-7'}
+                        </span>
+                        <span className="text-[10px] text-emerald-400 font-semibold block">
+                          Verified Passenger • {travelHistory.length} Saved Flights
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Navigation Links */}
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        setCurrentView('MAIN');
+                        setIsSideDrawerOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition ${
+                        currentView === 'MAIN'
+                          ? 'bg-amber-400 text-neutral-950 font-bold shadow-md shadow-amber-400/20'
+                          : 'border border-white/10 bg-white/5 text-neutral-200 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span>✈</span>
+                        <span>{lang === 'ur' ? 'مین فلائٹ بکنگ (Home)' : 'Flight Booking Portal'}</span>
+                      </div>
+                      <span>➔</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setCurrentView('DASHBOARD');
+                        setIsSideDrawerOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition ${
+                        currentView === 'DASHBOARD'
+                          ? 'bg-amber-400 text-neutral-950 font-bold shadow-md shadow-amber-400/20'
+                          : 'border border-white/10 bg-white/5 text-neutral-200 hover:bg-white/10'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span>📊</span>
+                        <span>{lang === 'ur' ? 'کسٹمر ڈیش بورڈ (Customer Dashboard)' : 'Customer Travel Dashboard'}</span>
+                      </div>
+                      <span className="rounded bg-amber-400/20 px-2 py-0.5 text-[9px] font-bold text-amber-300">
+                        {travelHistory.length}
+                      </span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setCurrentView('MAIN');
+                        setIsSideDrawerOpen(false);
+                        const f = document.getElementById('fleet');
+                        if (f) f.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-semibold text-neutral-200 hover:bg-white/10 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span>🇵🇰</span>
+                        <span>{lang === 'ur' ? 'عالمی فضائی بیڑہ (Fleet Showcase)' : 'Global Fleet Gallery'}</span>
+                      </div>
+                      <span>➔</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsSideDrawerOpen(false);
+                        startCamera();
+                      }}
+                      className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-semibold text-neutral-200 hover:bg-white/10 transition"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span>🛡️</span>
+                        <span>{lang === 'ur' ? 'بائیو میٹرک پاسپورٹ اسکینر (e-KYC)' : 'Biometric e-KYC Scanner'}</span>
+                      </div>
+                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                    </button>
+                  </div>
+
+                  {/* DATA BACKUP & RESTORE SECTION IN SIDE DRAWER */}
+                  <div className="mt-6 pt-5 border-t border-white/10">
+                    <div className="flex items-center gap-2 text-xs font-bold text-amber-300 mb-2">
+                      <span>💾</span>
+                      <span>{lang === 'ur' ? 'بیک اپ اور ڈیٹا سیکیورٹی سنٹر' : 'Data Backup & Vault Center'}</span>
+                    </div>
+
+                    <p className="text-[11px] text-neutral-400 leading-relaxed mb-3">
+                      {lang === 'ur'
+                        ? 'آپ کی تمام پچھلی پروازوں اور ٹکٹس کا ڈیٹا ہمیشہ محفوظ رہتا ہے۔ آپ فائل ڈاؤنلوڈ بھی کر سکتے ہیں۔'
+                        : 'Every booking you make is permanently stored in your encrypted local vault.'}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={handleDownloadBackup}
+                        className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
+                      >
+                        <span>⬇</span>
+                        <span>{lang === 'ur' ? 'بیک اپ فائل لیں' : 'Export Backup'}</span>
+                      </button>
+
+                      <label className="flex items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-neutral-300 hover:bg-white/10 cursor-pointer transition">
+                        <span>⬆</span>
+                        <span>{lang === 'ur' ? 'بیک اپ بحال کریں' : 'Restore'}</span>
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleRestoreBackup}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Side Drawer Footer Signature */}
+                <div className="mt-8 pt-4 border-t border-white/10 text-center">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-4 py-1.5 shadow-md shadow-amber-500/10">
+                    <span className="text-amber-400 font-bold">✦</span>
+                    <span className="font-serif text-xs font-bold text-amber-300">
+                      Developed by Hamza Latif
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* --- 4. WEBRTC LIVE CAMERA PASSPORT SCANNER MODAL --- */}
           {isKycOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl animate-in fade-in">
               <div className="relative w-full max-w-2xl rounded-3xl border border-amber-400/40 bg-[#0d1527] shadow-2xl overflow-hidden">
@@ -1302,27 +1733,66 @@
             </div>
           )}
 
-          {/* --- 6. MANDATORY AUTH MODAL (CNIC, PHONE, OTP) --- */}
+          {/* --- 5. MANDATORY AUTH MODAL --- */}
           {isAuthOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl animate-in fade-in">
-              <AuthModalContent
-                onClose={() => setIsAuthOpen(false)}
-                onLoginSuccess={(user) => {
-                  setCurrentUser(user);
-                  setPassengerForm((prev) => ({
-                    ...prev,
-                    fullName: user.name,
-                    cnic: user.cnic,
-                    phone: user.phone
-                  }));
+              <div className="relative w-full max-w-md rounded-3xl border border-amber-400/40 bg-[#0d1424] shadow-2xl overflow-hidden p-6">
+                <div className="flex justify-between items-center border-b border-white/10 pb-3 mb-4">
+                  <h3 className="font-serif text-lg font-bold text-white">Passenger Identity & Sign In</h3>
+                  <button onClick={() => setIsAuthOpen(false)} className="text-neutral-400 hover:text-white">✕</button>
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  const u = {
+                    name: 'Hamza Latif',
+                    cnic: '31302-5257137-7',
+                    phone: '+92 300 1234567',
+                    email: 'hamza.latif@flywithsky.com'
+                  };
+                  setCurrentUser(u);
+                  localStorage.setItem('flywithsky_user', JSON.stringify(u));
                   setIsAuthOpen(false);
-                }}
-                lang={lang}
-              />
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-xs text-neutral-300 mb-1">Full Legal Name</label>
+                    <input
+                      type="text"
+                      defaultValue="Hamza Latif"
+                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-neutral-300 mb-1">CNIC / National Identity Card Number</label>
+                    <input
+                      type="text"
+                      defaultValue="31302-5257137-7"
+                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-mono text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs text-neutral-300 mb-1">Mobile Phone Number</label>
+                    <input
+                      type="tel"
+                      defaultValue="+92 300 1234567"
+                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-sm font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
+                  >
+                    Activate Profile & Proceed ➔
+                  </button>
+                </form>
+              </div>
             </div>
           )}
 
-          {/* --- 7. FOOTER WITH MANDATORY SIGNATURE: "Developed by Hamza Latif" --- */}
+          {/* --- 6. FOOTER WITH MANDATORY SIGNATURE: "Developed by Hamza Latif" --- */}
           <footer className="border-t border-white/10 bg-[#060a14] text-xs text-neutral-400">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -1353,298 +1823,6 @@
               </div>
             </div>
           </footer>
-        </div>
-      );
-    }
-
-    // --- SUBCOMPONENT: AUTH MODAL CONTENT (REGISTER / LOGIN WITH CNIC, PHONE, OTP) ---
-    function AuthModalContent({ onClose, onLoginSuccess, lang }) {
-      const [authMode, setAuthMode] = useState('LOGIN'); // 'LOGIN' | 'REGISTER' | 'OTP'
-      const [loginMethod, setLoginMethod] = useState('PHONE'); // 'PHONE' | 'CNIC'
-      const [countryCode, setCountryCode] = useState(COUNTRY_PHONE_CODES[0]);
-
-      const [phone, setPhone] = useState('');
-      const [cnic, setCnic] = useState('');
-      const [fullName, setFullName] = useState('');
-      const [password, setPassword] = useState('');
-      const [confirmPassword, setConfirmPassword] = useState('');
-      const [otp, setOtp] = useState(['4', '8', '2', '9']);
-      const [error, setError] = useState('');
-
-      const formatCnic = (val) => {
-        const cleaned = val.replace(/\D/g, '').slice(0, 13);
-        let out = cleaned;
-        if (cleaned.length > 5 && cleaned.length <= 12) out = `${cleaned.slice(0, 5)}-${cleaned.slice(5)}`;
-        else if (cleaned.length > 12) out = `${cleaned.slice(0, 5)}-${cleaned.slice(5, 12)}-${cleaned.slice(12)}`;
-        setCnic(out);
-      };
-
-      const submitRegister = (e) => {
-        e.preventDefault();
-        setError('');
-        if (!fullName.trim() || cnic.length < 13 || !phone.trim() || password.length < 6) {
-          setError('Please fill in all mandatory fields with valid CNIC (13 digits) and password.');
-          return;
-        }
-        if (password !== confirmPassword) {
-          setError('Passwords do not match.');
-          return;
-        }
-        setAuthMode('OTP');
-      };
-
-      const submitOtp = (e) => {
-        e.preventDefault();
-        const user = {
-          name: fullName || 'Hamza Latif',
-          cnic: cnic || '35201-7892140-5',
-          phone: `${countryCode.code} ${phone || '3001234567'}`,
-          isVerified: true
-        };
-        try { localStorage.setItem('flywithsky_user', JSON.stringify(user)); } catch (e) {}
-        onLoginSuccess(user);
-      };
-
-      const submitLogin = (e) => {
-        e.preventDefault();
-        setError('');
-        const user = {
-          name: loginMethod === 'PHONE' ? 'Hamza Latif (Verified Passenger)' : 'محمد طارق علی (Tariq Ali)',
-          cnic: loginMethod === 'CNIC' ? cnic : '35201-7892140-5',
-          phone: loginMethod === 'PHONE' ? `${countryCode.code} ${phone}` : '+92 300 7829104',
-          isVerified: true
-        };
-        try { localStorage.setItem('flywithsky_user', JSON.stringify(user)); } catch (e) {}
-        onLoginSuccess(user);
-      };
-
-      return (
-        <div className="relative w-full max-w-md rounded-3xl border border-amber-400/40 bg-[#0d1424] shadow-2xl overflow-hidden">
-          <div className="flex justify-between items-center border-b border-white/10 bg-[#121c33] px-6 py-4">
-            <h3 className="font-serif text-lg font-bold text-white">
-              {authMode === 'LOGIN' ? 'The Fly With Sky Sign In' : authMode === 'REGISTER' ? 'Register Passenger Profile' : 'Phone OTP Verification'}
-            </h3>
-            <button onClick={onClose} className="text-neutral-400 hover:text-white">✕</button>
-          </div>
-
-          {authMode !== 'OTP' && (
-            <div className="flex border-b border-white/10 bg-black/30 p-1.5 text-xs font-semibold">
-              <button
-                onClick={() => { setAuthMode('LOGIN'); setError(''); }}
-                className={`flex-1 py-2 rounded-xl transition ${authMode === 'LOGIN' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400'}`}
-              >
-                Sign In (لاگ ان)
-              </button>
-              <button
-                onClick={() => { setAuthMode('REGISTER'); setError(''); }}
-                className={`flex-1 py-2 rounded-xl transition ${authMode === 'REGISTER' ? 'bg-amber-400 text-neutral-950 font-bold' : 'text-neutral-400'}`}
-              >
-                Register (CNIC & Phone)
-              </button>
-            </div>
-          )}
-
-          <div className="p-6">
-            {error && (
-              <div className="mb-4 rounded-xl border border-red-500/40 bg-red-950/40 p-2.5 text-xs text-red-300">
-                {error}
-              </div>
-            )}
-
-            {authMode === 'LOGIN' && (
-              <form onSubmit={submitLogin} className="space-y-4">
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <button
-                    type="button"
-                    onClick={() => setLoginMethod('PHONE')}
-                    className={`rounded-xl py-2 text-xs font-bold border ${loginMethod === 'PHONE' ? 'border-amber-400 bg-amber-400/20 text-amber-300' : 'border-white/10 text-neutral-400'}`}
-                  >
-                    Phone Number
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLoginMethod('CNIC')}
-                    className={`rounded-xl py-2 text-xs font-bold border ${loginMethod === 'CNIC' ? 'border-amber-400 bg-amber-400/20 text-amber-300' : 'border-white/10 text-neutral-400'}`}
-                  >
-                    CNIC / National ID
-                  </button>
-                </div>
-
-                {loginMethod === 'PHONE' ? (
-                  <div>
-                    <label className="block text-xs text-neutral-300 mb-1">Mobile Phone Number</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={countryCode.code}
-                        onChange={(e) => setCountryCode(COUNTRY_PHONE_CODES.find(c => c.code === e.target.value))}
-                        className="rounded-2xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-white"
-                      >
-                        {COUNTRY_PHONE_CODES.map(c => (
-                          <option key={c.code} value={c.code} className="bg-[#0e1626]">{c.flag} {c.code}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="300 1234567"
-                        className="flex-1 rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <label className="block text-xs text-neutral-300 mb-1">CNIC / ID Card Number</label>
-                    <input
-                      type="text"
-                      required
-                      value={cnic}
-                      onChange={(e) => formatCnic(e.target.value)}
-                      placeholder="35201-1234567-1"
-                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-mono text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-xs text-neutral-300 mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white focus:border-amber-400 focus:outline-none"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-sm font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
-                >
-                  Sign In & Proceed to Booking
-                </button>
-              </form>
-            )}
-
-            {authMode === 'REGISTER' && (
-              <form onSubmit={submitRegister} className="space-y-3">
-                <div>
-                  <label className="block text-xs text-neutral-300 mb-1">Full Legal Name (as on Passport/ID) *</label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Hamza Latif"
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-neutral-300 mb-1">CNIC / National ID Card Number *</label>
-                  <input
-                    type="text"
-                    required
-                    value={cnic}
-                    onChange={(e) => formatCnic(e.target.value)}
-                    placeholder="35201-1234567-1"
-                    maxLength={15}
-                    className="w-full rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-mono text-white focus:border-amber-400 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs text-neutral-300 mb-1">Phone Number (for WhatsApp/SMS Alerts) *</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={countryCode.code}
-                      onChange={(e) => setCountryCode(COUNTRY_PHONE_CODES.find(c => c.code === e.target.value))}
-                      className="rounded-2xl border border-white/15 bg-white/5 px-2.5 py-2 text-xs text-white"
-                    >
-                      {COUNTRY_PHONE_CODES.map(c => (
-                        <option key={c.code} value={c.code} className="bg-[#0e1626]">{c.flag} {c.code}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="tel"
-                      required
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="300 1234567"
-                      className="flex-1 rounded-2xl border border-white/15 bg-white/5 px-4 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-neutral-300 mb-1">Password *</label>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Min 6 chars"
-                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-neutral-300 mb-1">Confirm *</label>
-                    <input
-                      type="password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Repeat"
-                      className="w-full rounded-2xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white focus:border-amber-400 focus:outline-none"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-sm font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
-                >
-                  Proceed to OTP Verification ➔
-                </button>
-              </form>
-            )}
-
-            {authMode === 'OTP' && (
-              <form onSubmit={submitOtp} className="space-y-4 text-center">
-                <h4 className="font-bold text-white text-base">Enter 4-Digit One-Time Passcode</h4>
-                <p className="text-xs text-neutral-400">Passcode sent to {countryCode.code} {phone}</p>
-
-                <div className="flex justify-center gap-3">
-                  {otp.map((digit, i) => (
-                    <input
-                      key={i}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => {
-                        const copy = [...otp];
-                        copy[i] = e.target.value.slice(-1);
-                        setOtp(copy);
-                      }}
-                      className="h-12 w-12 rounded-2xl border border-amber-400/50 bg-white/5 text-center font-mono text-xl font-bold text-amber-300 focus:border-amber-400 focus:outline-none"
-                    />
-                  ))}
-                </div>
-
-                <span className="inline-block text-xs text-emerald-400 font-mono">Mock Code: 4829 (Auto-verified)</span>
-
-                <button
-                  type="submit"
-                  className="w-full rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-500 py-3 text-sm font-bold text-neutral-950 shadow-md hover:from-emerald-300 transition"
-                >
-                  Verify & Activate Account
-                </button>
-              </form>
-            )}
-          </div>
         </div>
       );
     }
