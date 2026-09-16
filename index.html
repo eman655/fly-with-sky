@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AURA AERO | The Sovereign Sky - Ultra-Luxury Flagship Airline</title>
+  
+  <!-- Fonts: Cinzel Decorative, Inter, Noto Nastaliq Urdu, Tajawal Arabic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Inter:wght@300;400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Tajawal:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            obsidian: '#07090e',
+            navy: {
+              950: '#0a0e1a',
+              900: '#0e1424',
+              800: '#151d33',
+            },
+            gold: {
+              300: '#f6e05e',
+              400: '#ecc94b',
+              500: '#d4af37',
+              600: '#b7791f',
+            },
+            cyan: {
+              400: '#22d3ee',
+              500: '#06b6d4',
+            }
+          },
+          fontFamily: {
+            serif: ['Cinzel', 'serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            urdu: ['"Noto Nastaliq Urdu"', 'serif'],
+            arabic: ['"Tajawal"', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- React 18, ReactDOM & Babel for in-browser standalone execution -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #07090e;
+      color: #f3f4f6;
+      font-family: 'Inter', system-ui, sans-serif;
+      overflow-x: hidden;
+    }
+    [dir="rtl"] {
+      text-align: right;
+    }
+    [dir="rtl"] .font-serif {
+      font-family: 'Noto Nastaliq Urdu', 'Tajawal', serif;
+    }
+    /* Smooth custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #080b12;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #d4af37;
+    }
+    @keyframes laserScan {
+      0% { top: 5%; opacity: 0.2; }
+      50% { top: 90%; opacity: 1; }
+      100% { top: 5%; opacity: 0.2; }
+    }
+    .animate-laser {
+      animation: laserScan 2.2s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="bg-[#07090e] text-neutral-100 antialiased selection:bg-amber-400 selection:text-black">
+  <div id="root"></div>
+
+  <!-- Main Application Script using Babel JSX -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    // --- I18N DATA & LOCALIZATION ENGINE ---
+    const LANGUAGES = {
+      en: {
+        code: 'en',
+        name: 'English (US)',
+        nativeName: 'English',
+        dir: 'ltr',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        defaultCurrency: 'USD'
+      },
+      ur: {
+        code: 'ur',
+        name: 'Urdu',
+        nativeName: 'اردو',
+        dir: 'rtl',
+        fontFamily: "'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif",
+        defaultCurrency: 'PKR'
+      },
+      ar: {
+        code: 'ar',
+        name: 'Arabic',
+        nativeName: 'العربية',
+        dir: 'rtl',
+        fontFamily: "'Tajawal', 'IBM Plex Sans Arabic', sans-serif",
+        defaultCurrency: 'AED'
+      },
+      fr: {
+        code: 'fr',
+        name: 'French',
+        nativeName: 'Français',
+        dir: 'ltr',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        defaultCurrency: 'EUR'
+      },
+      es: {
+        code: 'es',
+        name: 'Spanish',
+        nativeName: 'Español',
+        dir: 'ltr',
+        fontFamily: 'Inter, system-ui, sans-serif',
+        defaultCurrency: 'EUR'
+      },
+      zh: {
+        code: 'zh',
+        name: 'Chinese (Simplified)',
+        nativeName: '简体中文',
+        dir: 'ltr',
+        fontFamily: "'PingFang SC', 'Microsoft YaHei', sans-serif",
+        defaultCurrency: 'CNY'
+      }
+    };
+
+    const CURRENCIES = {
+      USD: {
+        code: 'USD',
+        symbol: '$',
+        rateAgainstUSD: 1.0,
+        format: (amt) => `$${Number(amt).toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+      },
+      EUR: {
+        code: 'EUR',
+        symbol: '€',
+        rateAgainstUSD: 0.92,
+        format: (amt) => `€${Number(amt * 0.92).toLocaleString('de-DE', { maximumFractionDigits: 0 })}`
+      },
+      PKR: {
+        code: 'PKR',
+        symbol: '₨',
+        rateAgainstUSD: 278.5,
+        format: (amt) => `₨ ${Number(amt * 278.5).toLocaleString('ur-PK', { maximumFractionDigits: 0 })}`
+      },
+      AED: {
+        code: 'AED',
+        symbol: 'د.إ',
+        rateAgainstUSD: 3.67,
+        format: (amt) => `${Number(amt * 3.67).toLocaleString('ar-AE', { maximumFractionDigits: 0 })} د.إ`
+      },
+      CNY: {
+        code: 'CNY',
+        symbol: '¥',
+        rateAgainstUSD: 7.24,
+        format: (amt) => `¥${Number(amt * 7.24).toLocaleString('zh-CN', { maximumFractionDigits: 0 })}`
+      },
+      GBP: {
+        code: 'GBP',
+        symbol: '£',
+        rateAgainstUSD: 0.79,
+        format: (amt) => `£${Number(amt * 0.79).toLocaleString('en-GB', { maximumFractionDigits: 0 })}`
+      }
+    };
+
+    const AIRPORTS = [
+      { iata: 'DXB', city: 'Dubai', country: 'United Arab Emirates', name: 'Dubai International' },
+      { iata: 'LHR', city: 'London', country: 'United Kingdom', name: 'Heathrow Airport' },
+      { iata: 'JFK', city: 'New York', country: 'United States', name: 'John F. Kennedy Intl' },
+      { iata: 'ISB', city: 'Islamabad', country: 'Pakistan', name: 'Islamabad International' },
+      { iata: 'CDG', city: 'Paris', country: 'France', name: 'Charles de Gaulle' },
+      { iata: 'HND', city: 'Tokyo', country: 'Japan', name: 'Haneda Airport' }
+    ];
+
+    const TRANSLATIONS = {
+      en: {
+        brand_name: 'AURA AERO',
+        brand_tagline: 'The Sovereign Sky | Ultra-Luxury Flagship',
+        nav_flights: 'Book Flights',
+        nav_suites: 'Private Suites',
+        nav_experience: 'Haute Dining',
+        nav_membership: 'Sovereign Circle',
+        btn_kyc_verification: 'Bank-Grade e-KYC',
+        btn_search_flights: 'Search Sovereign Flights',
+        trip_round_trip: 'Round Trip',
+        trip_one_way: 'One Way',
+        trip_multi_city: 'Multi-City',
+        label_origin: 'Departure Airport',
+        label_destination: 'Destination Airport',
+        label_depart_date: 'Departure Date',
+        label_return_date: 'Return Date',
+        label_passengers: 'Travelers',
+        label_cabin: 'Cabin Class',
+        cabin_economy: 'Grand Economy',
+        cabin_premium_economy: 'Prestige Premium',
+        cabin_business: 'Aura Lie-Flat Business',
+        cabin_first_suite: 'Sovereign Royal Suite',
+        btn_select_flight: 'Select Flight',
+        badge_verified: 'ICAO Verified / Cleared for Boarding',
+        badge_unverified: 'Biometric e-KYC Pending',
+        mrz_name: 'Full Legal Name',
+        mrz_passport: 'Passport Number',
+        mrz_nationality: 'Nationality',
+        mrz_expiry: 'Document Expiration',
+        mrz_gender: 'Sex',
+        visa_exempt: 'Visa Exempt (Bilateral Treaty Cleared)',
+        visa_evisa: 'Electronic Travel Authorization (eTA) Required',
+        visa_required: 'Consular Visa Clearance Required',
+        camera_capture_passport: 'Scan Passport MRZ Page',
+        camera_capture_face: 'Perform Face Liveness Match',
+        scanner_step1_title: 'Step 1: Optical Passport MRZ Alignment',
+        scanner_step1_desc: 'Align your machine-readable passport within the 16:9 holographic laser grid.',
+        scanner_step2_title: 'Step 2: Biometric Liveness Verification',
+        scanner_step2_desc: 'Hold your gaze within the biometric oval guide. Blink once when the reticle stabilizes.',
+        seat_map_title: 'Boeing 777-9 Sovereign Flagship Layout',
+        seat_available: 'Available',
+        seat_occupied: 'Reserved',
+        seat_selected: 'Your Selection',
+        seat_suite_perks: 'Private motorized sliding door, 32" 4K HDR display, Poltrona Frau leather, personal minibar',
+        btn_apple_wallet: 'Add to Apple Wallet',
+        btn_google_wallet: 'Save to Google Wallet',
+        btn_print_pdf: 'Download Cryptographic PDF'
+      },
+      ur: {
+        brand_name: 'اورا ایئرو',
+        brand_tagline: 'شہنشاہی فضائیں | انتہائی پرتعیش عالمی پروازیں',
+        nav_flights: 'پروازیں بک کریں',
+        nav_suites: 'شاہی پرائیویٹ سویٹس',
+        nav_experience: 'شاہی ضیافت و راحت',
+        nav_membership: 'سوورن کلب',
+        btn_kyc_verification: 'بائیو میٹرک پاسپورٹ تصدیق (e-KYC)',
+        btn_search_flights: 'عالمی پروازیں تلاش کریں',
+        trip_round_trip: 'دو طرفہ سفر',
+        trip_one_way: 'ایک طرفہ سفر',
+        trip_multi_city: 'کثیر المقاصد شہر',
+        label_origin: 'روانگی کا ہوائی اڈہ',
+        label_destination: 'منزل کا ہوائی اڈہ',
+        label_depart_date: 'روانگی کی تاریخ',
+        label_return_date: 'واپسی کی تاریخ',
+        label_passengers: 'مسافرین کی تعداد',
+        label_cabin: 'کیبن کلاس',
+        cabin_economy: 'گرینڈ اکانومی',
+        cabin_premium_economy: 'پریمیئم اکانومی',
+        cabin_business: 'اورا لائی فلیٹ بزنس',
+        cabin_first_suite: 'شہنشاہی رائل سویٹ',
+        btn_select_flight: 'پرواز منتخب کریں',
+        badge_verified: 'آئی سی اے او (ICAO) سے تصدیق شدہ / سفر کی اجازت',
+        badge_unverified: 'بائیو میٹرک تصدیق درکار ہے',
+        mrz_name: 'پاسپورٹ کے مطابق پورا نام',
+        mrz_passport: 'پاسپورٹ نمبر',
+        mrz_nationality: 'قومیت / شہریت',
+        mrz_expiry: 'میعاد ختم ہونے کی تاریخ',
+        mrz_gender: 'جنس',
+        visa_exempt: 'ویزہ فری داخلہ (دوطرفہ معاہدہ)',
+        visa_evisa: 'الیکٹرانک ٹریول اجازت نامہ (eTA) درکار ہے',
+        visa_required: 'سفارت خانے کا ویزہ لازمی ہے',
+        camera_capture_passport: 'پاسپورٹ صفحہ اسکین کریں',
+        camera_capture_face: 'چہرے کی لائیو تصدیق کریں',
+        scanner_step1_title: 'مرحلہ ١: پاسپورٹ ایم آر زیڈ فوکس کریں',
+        scanner_step1_desc: 'اپنے پاسپورٹ کو لیزر گائیڈ کے اندر رکھیں تاکہ سیکیورٹی کوڈز پڑھے جا سکیں۔',
+        scanner_step2_title: 'مرحلہ ٢: زندہ چہرے کی بائیو میٹرک تصدیق',
+        scanner_step2_desc: 'سنہری بیضوی دائرے میں چہرہ رکھیں اور سنہری لکیر مستحکم ہونے پر پلک جھپکائیں۔',
+        seat_map_title: 'بوئنگ 777-9 شہنشاہی طیارے کی نشستیں',
+        seat_available: 'دستیاب',
+        seat_occupied: 'پہلے سے بُک',
+        seat_selected: 'آپ کا انتخاب',
+        seat_suite_perks: 'ذاتی سلائیڈنگ دروازہ، 32 انچ فور کے اسکرین، پالش چمڑا اور پرائیویٹ بار',
+        btn_apple_wallet: 'ایپل والٹ میں محفوظ کریں',
+        btn_google_wallet: 'گوگل والٹ میں محفوظ کریں',
+        btn_print_pdf: 'تصدیق شدہ پی ڈی ایف ڈاؤنلوڈ کریں'
+      },
+      ar: {
+        brand_name: 'أورا إيرو',
+        brand_tagline: 'الأفق السيادي | الطيران فائق الفخامة',
+        nav_flights: 'حجز الرحلات',
+        nav_suites: 'الأجنحة الخاصة',
+        nav_experience: 'الضيافة الراقية',
+        nav_membership: 'النادي السيادي',
+        btn_kyc_verification: 'التحقق البيومتري المعتمد (e-KYC)',
+        btn_search_flights: 'البحث عن الرحلات الفاخرة',
+        trip_round_trip: 'ذهاب وعودة',
+        trip_one_way: 'اتجاه واحد',
+        trip_multi_city: 'وجهات متعددة',
+        label_origin: 'مطار الإقلاع',
+        label_destination: 'مطار الوصول',
+        label_depart_date: 'تاريخ المغادرة',
+        label_return_date: 'تاريخ العودة',
+        label_passengers: 'المسافرون',
+        label_cabin: 'درجة السفر',
+        cabin_economy: 'الدرجة السياحية الفاخرة',
+        cabin_premium_economy: 'الدرجة السياحية الممتازة',
+        cabin_business: 'درجة أورا للأعمال المنبسطة',
+        cabin_first_suite: 'الجناح الملكي السيادي',
+        btn_select_flight: 'اختر الرحلة',
+        badge_verified: 'تم التحقق دولياً من إيكاو (ICAO) / مصرح بالصعود',
+        badge_unverified: 'بانتظار التحقق البيومتري من الجواز',
+        mrz_name: 'الاسم القانوني الكامل',
+        mrz_passport: 'رقم جواز السفر',
+        mrz_nationality: 'الجنسية',
+        mrz_expiry: 'تاريخ انتهاء الصلاحية',
+        mrz_gender: 'الجنس',
+        visa_exempt: 'معفى من التأشيرة (اتفاقية ثنائية)',
+        visa_evisa: 'تصريح سفر إلكتروني (eTA) مطلوب',
+        visa_required: 'تأشيرة قنصلية مطلوبة',
+        camera_capture_passport: 'مسح صفحة الجواز الضوئية',
+        camera_capture_face: 'التحقق الحيوي من الوجه',
+        scanner_step1_title: 'الخطوة ١: محاذاة شفرة الجواز (MRZ)',
+        scanner_step1_desc: 'وجّه الجواز نحو الإطار الهولوغرافي بالليزر بدقة.',
+        scanner_step2_title: 'الخطوة ٢: اختبار الحيوية البيومترية للوجه',
+        scanner_step2_desc: 'ثبّت نظرك داخل الإطار البيضاوي واغمض عينيك لمرة واحدة عند استقرار المؤشر.',
+        seat_map_title: 'مخطط طائرة بوينغ 777-9 السيادية',
+        seat_available: 'متاح',
+        seat_occupied: 'محجوز',
+        seat_selected: 'اختيارك',
+        seat_suite_perks: 'باب انزلاقي خاص، شاشة 32 بوصة 4K، مقاعد جلد بولترونا فراو، ميني بار شخصي',
+        btn_apple_wallet: 'إضافة إلى Apple Wallet',
+        btn_google_wallet: 'حفظ في Google Wallet',
+        btn_print_pdf: 'تحميل الوثيقة المشفرة PDF'
+      },
+      fr: {
+        brand_name: 'AURA AÉRO',
+        brand_tagline: 'Le Ciel Souverain | Compagnie Porte-Drapeau Ultra-Luxe',
+        nav_flights: 'Réserver un Vol',
+        nav_suites: 'Suites Privées',
+        nav_experience: 'Haute Gastronomie',
+        nav_membership: 'Cercle Souverain',
+        btn_kyc_verification: 'Vérification e-KYC Sécurisée',
+        btn_search_flights: 'Rechercher les Vols Phares',
+        trip_round_trip: 'Aller-Retour',
+        trip_one_way: 'Aller Simple',
+        trip_multi_city: 'Multi-Destinations',
+        label_origin: 'Aéroport de Départ',
+        label_destination: 'Aéroport d\'Arrivée',
+        label_depart_date: 'Date de Départ',
+        label_return_date: 'Date de Retour',
+        label_passengers: 'Passagers',
+        label_cabin: 'Classe de Voyage',
+        cabin_economy: 'Grande Économie',
+        cabin_premium_economy: 'Prestige Premium',
+        cabin_business: 'Affaires Aura Lie-Flat',
+        cabin_first_suite: 'Suite Royale Souveraine',
+        btn_select_flight: 'Choisir ce Vol',
+        badge_verified: 'Certifié OACI / Autorisé à l\'Embarquement',
+        badge_unverified: 'Vérification Biométrique Requise',
+        mrz_name: 'Nom Légal Complet',
+        mrz_passport: 'Numéro de Passeport',
+        mrz_nationality: 'Nationalité',
+        mrz_expiry: 'Date d\'Expiration',
+        mrz_gender: 'Sexe',
+        visa_exempt: 'Exemption de Visa (Accord Bilatéral)',
+        visa_evisa: 'Autorisation Électronique (eTA) Requise',
+        visa_required: 'Visa Consulaire Obligatoire',
+        camera_capture_passport: 'Scanner la Page Passeport MRZ',
+        camera_capture_face: 'Vérification Faciale en Direct',
+        scanner_step1_title: 'Étape 1: Alignement Optique du Passeport',
+        scanner_step1_desc: 'Cadrez la zone lisible en machine du passeport dans le réticule holographique 16:9.',
+        scanner_step2_title: 'Étape 2: Détection de Vivacité Faciale',
+        scanner_step2_desc: 'Positionnez votre visage dans l\'ovale biométrique et clignez des yeux.',
+        seat_map_title: 'Cabine Boeing 777-9 Sovereign',
+        seat_available: 'Disponible',
+        seat_occupied: 'Occupé',
+        seat_selected: 'Votre Choix',
+        seat_suite_perks: 'Porte coulissante privée, écran 4K 32", cuir Poltrona Frau, minibar personnel',
+        btn_apple_wallet: 'Ajouter à Apple Wallet',
+        btn_google_wallet: 'Enregistrer sur Google Wallet',
+        btn_print_pdf: 'Télécharger le PDF Chiffré'
+      },
+      es: {
+        brand_name: 'AURA AÉREO',
+        brand_tagline: 'El Cielo Soberano | Buque Insignia de Ultra Lujo',
+        nav_flights: 'Reservar Vuelos',
+        nav_suites: 'Suites Privadas',
+        nav_experience: 'Alta Gastronomía',
+        nav_membership: 'Círculo Soberano',
+        btn_kyc_verification: 'Verificación e-KYC Segura',
+        btn_search_flights: 'Buscar Vuelos Insignia',
+        trip_round_trip: 'Ida y Vuelta',
+        trip_one_way: 'Solo Ida',
+        trip_multi_city: 'Múltiples Destinos',
+        label_origin: 'Aeropuerto de Origen',
+        label_destination: 'Aeropuerto de Destino',
+        label_depart_date: 'Fecha de Salida',
+        label_return_date: 'Fecha de Regreso',
+        label_passengers: 'Pasajeros',
+        label_cabin: 'Clase de Cabina',
+        cabin_economy: 'Gran Turista',
+        cabin_premium_economy: 'Prestigio Premium',
+        cabin_business: 'Aura Business Cama Plana',
+        cabin_first_suite: 'Suite Real Soberana',
+        btn_select_flight: 'Seleccionar Vuelo',
+        badge_verified: 'Verificado por OACI / Autorizado para Abordar',
+        badge_unverified: 'Verificación Biométrica Pendiente',
+        mrz_name: 'Nombre Completo Legal',
+        mrz_passport: 'Número de Pasaporte',
+        mrz_nationality: 'Nacionalidad',
+        mrz_expiry: 'Fecha de Caducidad',
+        mrz_gender: 'Sexo',
+        visa_exempt: 'Exento de Visado',
+        visa_evisa: 'Requiere Autorización Electrónica (eTA)',
+        visa_required: 'Requiere Visado Consular',
+        camera_capture_passport: 'Escanear Página MRZ del Pasaporte',
+        camera_capture_face: 'Prueba Facial en Vivo',
+        scanner_step1_title: 'Paso 1: Alineación Óptica del Pasaporte',
+        scanner_step1_desc: 'Alinee el pasaporte en el marco holográfico láser 16:9.',
+        scanner_step2_title: 'Paso 2: Prueba de Vida Biométrica',
+        scanner_step2_desc: 'Mire dentro de la guía ovalada y parpadee una vez cuando el retículo se estabilice.',
+        seat_map_title: 'Distribución Boeing 777-9 Sovereign',
+        seat_available: 'Disponible',
+        seat_occupied: 'Ocupado',
+        seat_selected: 'Tu Selección',
+        seat_suite_perks: 'Puerta corredera privada, pantalla 4K de 32", cuero Poltrona Frau, minibar personal',
+        btn_apple_wallet: 'Añadir a Apple Wallet',
+        btn_google_wallet: 'Guardar en Google Wallet',
+        btn_print_pdf: 'Descargar PDF Criptográfico'
+      },
+      zh: {
+        brand_name: '奥拉航空 AURA AERO',
+        brand_tagline: '御天至尊 | 全球超奢旗舰航空',
+        nav_flights: '预订航班',
+        nav_suites: '专属私密套房',
+        nav_experience: '星钻机上盛宴',
+        nav_membership: '君主尊爵会',
+        btn_kyc_verification: '银行级 e-KYC 电子护照核验',
+        btn_search_flights: '搜索旗舰航班',
+        trip_round_trip: '往返航班',
+        trip_one_way: '单程航班',
+        trip_multi_city: '多段航程',
+        label_origin: '始发地机场',
+        label_destination: '目的地机场',
+        label_depart_date: '启程日期',
+        label_return_date: '回程日期',
+        label_passengers: '随行旅客',
+        label_cabin: '客舱等级',
+        cabin_economy: '臻选经济舱',
+        cabin_premium_economy: '尊尚超经舱',
+        cabin_business: '奥拉全平躺公务舱',
+        cabin_first_suite: '君主头等皇家独立套房',
+        btn_select_flight: '选定航班',
+        badge_verified: 'ICAO 国际民航组织认证 / 准予登机',
+        badge_unverified: '待完成生物识别 e-KYC 核验',
+        mrz_name: '法定完整姓名',
+        mrz_passport: '护照证件号码',
+        mrz_nationality: '国籍 / 地区',
+        mrz_expiry: '证件有效截止日',
+        mrz_gender: '性别',
+        visa_exempt: '免签证入境（双边互免协定）',
+        visa_evisa: '需电子旅行许可 (eTA/eVisa)',
+        visa_required: '需领事馆纸质签证',
+        camera_capture_passport: '智能扫描护照机读码 (MRZ)',
+        camera_capture_face: '生物活体人脸精准核对',
+        scanner_step1_title: '第 1 步: 护照 MRZ 机读码对齐',
+        scanner_step1_desc: '请将护照个人信息页置于 16:9 全息激光网格内。',
+        scanner_step2_title: '第 2 步: 活体动态人脸比对',
+        scanner_step2_desc: '将面部置于金色椭圆引导框内，待准星锁定后轻眨眼睛。',
+        seat_map_title: '波音 777-9 君主旗舰座舱全景',
+        seat_available: '可选',
+        seat_occupied: '已占用',
+        seat_selected: '您的甄选',
+        seat_suite_perks: '全封闭电动滑门、32寸 4K HDR 幕墙、Poltrona Frau 定制真皮、私人冷藏吧',
+        btn_apple_wallet: '添加至 Apple 钱包',
+        btn_google_wallet: '保存至 Google 钱包',
+        btn_print_pdf: '下载加密防伪 PDF'
+      }
+    };
+
+    const FLIGHTS = [
+      {
+        id: 'AU-889',
+        flightNumber: 'AU 889',
+        origin: AIRPORTS[0], // DXB
+        destination: AIRPORTS[1], // LHR
+        departureTime: '08:45',
+        arrivalTime: '13:15',
+        duration: '7h 30m',
+        aircraft: 'Boeing 777-9 Sovereign Aero',
+        basePricesUSD: { economy: 680, premium_economy: 1450, business: 4200, first_suite: 9800 },
+        perks: ['Beluga Caviar & Krug Champagne', 'Private Chauffeur transfer', 'Onboard Sky Lounge']
+      },
+      {
+        id: 'AU-102',
+        flightNumber: 'AU 102',
+        origin: AIRPORTS[0], // DXB
+        destination: AIRPORTS[2], // JFK
+        departureTime: '02:15',
+        arrivalTime: '08:30',
+        duration: '14h 15m',
+        aircraft: 'Airbus A350-1000 Prestige',
+        basePricesUSD: { economy: 950, premium_economy: 2100, business: 6500, first_suite: 14200 },
+        perks: ['En-suite Shower Spa', 'Double Bed Private Bedroom', 'Starlink Hi-Speed Wi-Fi']
+      },
+      {
+        id: 'AU-305',
+        flightNumber: 'AU 305',
+        origin: AIRPORTS[3], // ISB
+        destination: AIRPORTS[1], // LHR
+        departureTime: '11:20',
+        arrivalTime: '16:05',
+        duration: '8h 45m',
+        aircraft: 'Boeing 787-10 Dreamliner Executive',
+        basePricesUSD: { economy: 720, premium_economy: 1600, business: 4400, first_suite: 10500 },
+        perks: ['Halal Gourmet Fine Dining', 'Silk Pajamas & Bvlgari Kit', 'Direct VIP Gate Access']
+      }
+    ];
+
+    const INITIAL_SEATS = [
+      { id: '1A', row: 1, col: 'A', category: 'first_suite', priceUSD: 1800, isOccupied: false },
+      { id: '1E', row: 1, col: 'E', category: 'first_suite', priceUSD: 1600, isOccupied: false },
+      { id: '1K', row: 1, col: 'K', category: 'first_suite', priceUSD: 1800, isOccupied: true },
+      { id: '2A', row: 2, col: 'A', category: 'first_suite', priceUSD: 1800, isOccupied: false },
+      { id: '2E', row: 2, col: 'E', category: 'first_suite', priceUSD: 1600, isOccupied: false },
+      { id: '2K', row: 2, col: 'K', category: 'first_suite', priceUSD: 1800, isOccupied: false },
+      { id: '3A', row: 3, col: 'A', category: 'business_lie_flat', priceUSD: 650, isOccupied: false },
+      { id: '3D', row: 3, col: 'D', category: 'business_lie_flat', priceUSD: 550, isOccupied: true },
+      { id: '3G', row: 3, col: 'G', category: 'business_lie_flat', priceUSD: 550, isOccupied: false },
+      { id: '3K', row: 3, col: 'K', category: 'business_lie_flat', priceUSD: 650, isOccupied: false },
+      { id: '4A', row: 4, col: 'A', category: 'business_lie_flat', priceUSD: 650, isOccupied: false },
+      { id: '4D', row: 4, col: 'D', category: 'business_lie_flat', priceUSD: 550, isOccupied: false },
+      { id: '4G', row: 4, col: 'G', category: 'business_lie_flat', priceUSD: 550, isOccupied: true },
+      { id: '4K', row: 4, col: 'K', category: 'business_lie_flat', priceUSD: 650, isOccupied: false },
+      { id: '5A', row: 5, col: 'A', category: 'premium_legroom', priceUSD: 150, isOccupied: false },
+      { id: '5B', row: 5, col: 'B', category: 'premium_legroom', priceUSD: 120, isOccupied: false },
+      { id: '5C', row: 5, col: 'C', category: 'premium_legroom', priceUSD: 140, isOccupied: false },
+      { id: '5H', row: 5, col: 'H', category: 'premium_legroom', priceUSD: 140, isOccupied: false },
+      { id: '5J', row: 5, col: 'J', category: 'premium_legroom', priceUSD: 120, isOccupied: true },
+      { id: '5K', row: 5, col: 'K', category: 'premium_legroom', priceUSD: 150, isOccupied: false }
+    ];
+
+    // --- MAIN APP COMPONENT ---
+    function AirlineApp() {
+      const [lang, setLang] = useState('en');
+      const [currency, setCurrency] = useState('USD');
+      const [dir, setDir] = useState('ltr');
+
+      const [selectedFlight, setSelectedFlight] = useState(FLIGHTS[0]);
+      const [selectedCabin, setSelectedCabin] = useState('first_suite');
+      const [selectedSeats, setSelectedSeats] = useState([]);
+      const [kycData, setKycData] = useState(null);
+
+      const [isKycModalOpen, setIsKycModalOpen] = useState(false);
+      const [isBoardingPassOpen, setIsBoardingPassOpen] = useState(false);
+
+      const t = (key) => TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
+      const currencyConfig = CURRENCIES[currency];
+
+      const changeLanguage = (newLang) => {
+        setLang(newLang);
+        const meta = LANGUAGES[newLang];
+        setDir(meta.dir);
+        setCurrency(meta.defaultCurrency);
+        document.documentElement.dir = meta.dir;
+        document.documentElement.lang = newLang;
+      };
+
+      const toggleDirection = () => {
+        const next = dir === 'ltr' ? 'rtl' : 'ltr';
+        setDir(next);
+        document.documentElement.dir = next;
+      };
+
+      const toggleSeat = (seat) => {
+        if (seat.isOccupied) return;
+        setSelectedSeats((prev) => {
+          const exists = prev.some((s) => s.id === seat.id);
+          if (exists) return prev.filter((s) => s.id !== seat.id);
+          return [...prev, seat];
+        });
+      };
+
+      return (
+        <div dir={dir} style={{ fontFamily: LANGUAGES[lang].fontFamily }} className="min-h-screen">
+          {/* Top Avionics Micro-Bar */}
+          <div className="w-full border-b border-white/10 bg-gradient-to-r from-amber-500/10 via-cyan-500/10 to-amber-500/10 px-4 py-1.5 text-xs">
+            <div className="mx-auto flex max-w-7xl items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="inline-block h-2 w-2 animate-ping rounded-full bg-cyan-400"></span>
+                <span className="font-mono tracking-widest text-cyan-300 uppercase">
+                  SOVEREIGN AERO • FLEET PROTOCOL: ACTIVE
+                </span>
+              </div>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={toggleDirection}
+                  className="rounded-full border border-amber-500/30 bg-black/40 px-3 py-0.5 font-mono text-[11px] text-amber-300 hover:border-amber-400"
+                >
+                  DIRECTION: {dir.toUpperCase()}
+                </button>
+                <span className="hidden sm:inline font-mono text-neutral-400">
+                  VIP Concierge: +971 4 AURA-VIP
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Master Interactive Header */}
+          <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07090e]/85 backdrop-blur-xl">
+            <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3.5 sm:px-6">
+              {/* Brand */}
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/40 bg-gradient-to-br from-neutral-900 to-black text-amber-400 shadow-lg shadow-amber-500/10">
+                  <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+                  </svg>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-serif text-xl sm:text-2xl font-bold tracking-widest text-white">
+                      {t('brand_name')}
+                    </span>
+                    <span className="rounded border border-amber-400/30 bg-amber-400/10 px-1.5 py-0.5 text-[9px] font-mono uppercase text-amber-300">
+                      FLAGSHIP
+                    </span>
+                  </div>
+                  <p className="hidden text-[11px] text-neutral-400 sm:block">{t('brand_tagline')}</p>
+                </div>
+              </div>
+
+              {/* Navigation Links */}
+              <nav className="hidden lg:flex items-center gap-6 text-xs font-medium text-neutral-300">
+                <a href="#booking" className="hover:text-amber-300 transition">{t('nav_flights')}</a>
+                <a href="#seats" className="hover:text-amber-300 transition">{t('nav_suites')}</a>
+                <a href="#haute" className="hover:text-amber-300 transition">{t('nav_experience')}</a>
+                <a href="#circle" className="hover:text-amber-300 transition">{t('nav_membership')}</a>
+              </nav>
+
+              {/* Controls */}
+              <div className="flex items-center gap-2.5">
+                {/* e-KYC Status Button */}
+                <button
+                  onClick={() => setIsKycModalOpen(true)}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-md transition ${
+                    kycData
+                      ? 'border border-emerald-500/50 bg-emerald-950/40 text-emerald-300'
+                      : 'border border-cyan-500/40 bg-cyan-950/30 text-cyan-300 hover:bg-cyan-900/40'
+                  }`}
+                >
+                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                  <span className="hidden md:inline">{kycData ? t('badge_verified') : t('btn_kyc_verification')}</span>
+                  <span className="md:hidden">e-KYC</span>
+                </button>
+
+                {/* Currency Selector */}
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="rounded-xl border border-white/15 bg-[#0e1424] px-2.5 py-2 text-xs font-mono font-bold text-amber-300 focus:outline-none cursor-pointer"
+                >
+                  {Object.values(CURRENCIES).map((c) => (
+                    <option key={c.code} value={c.code} className="bg-[#0a0d14] text-white">
+                      {c.code} ({c.symbol})
+                    </option>
+                  ))}
+                </select>
+
+                {/* Language (i18n) Selector */}
+                <select
+                  value={lang}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  className="rounded-xl border border-white/15 bg-[#0e1424] px-2.5 py-2 text-xs font-medium text-white focus:outline-none cursor-pointer"
+                >
+                  {Object.values(LANGUAGES).map((l) => (
+                    <option key={l.code} value={l.code} className="bg-[#0a0d14] text-white">
+                      {l.nativeName} ({l.dir.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </header>
+
+          {/* Hero Flagship Banner */}
+          <section className="relative overflow-hidden py-14 lg:py-20 border-b border-white/10">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[450px] bg-gradient-to-b from-amber-500/10 via-cyan-500/5 to-transparent blur-3xl pointer-events-none rounded-full" />
+            
+            <div className="relative mx-auto max-w-7xl px-4 text-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-500/10 px-4 py-1.5 text-xs font-mono text-amber-300 mb-6">
+                <span>✦ ULTRA-LUXURY GLOBAL FLAGSHIP AIRLINE ✦</span>
+              </div>
+
+              <h1 className="font-serif text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight text-white leading-tight">
+                The Sovereign Sky
+              </h1>
+
+              <p className="mt-4 mx-auto max-w-2xl text-sm sm:text-base text-neutral-300 leading-relaxed">
+                Intercontinental travel elevated to an art form. Private enclosed suites, Caviar & Krug Champagne service, and bank-grade WebRTC biometric e-KYC border clearance.
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3.5">
+                <a
+                  href="#booking"
+                  className="rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-3 text-xs font-bold uppercase tracking-wider text-neutral-950 shadow-lg shadow-amber-500/20 hover:from-amber-300 hover:to-amber-400 transition"
+                >
+                  {t('btn_search_flights')}
+                </a>
+                <button
+                  onClick={() => setIsKycModalOpen(true)}
+                  className="rounded-xl border border-cyan-500/40 bg-cyan-950/40 px-6 py-3 text-xs font-semibold text-cyan-300 hover:bg-cyan-900/50 transition"
+                >
+                  {kycData ? 'Passport Verified ✓' : t('btn_kyc_verification')}
+                </button>
+                <button
+                  onClick={() => setIsBoardingPassOpen(true)}
+                  className="rounded-xl border border-white/20 bg-white/5 px-6 py-3 text-xs font-semibold text-white hover:bg-white/10 transition"
+                >
+                  Digital Boarding Pass
+                </button>
+              </div>
+
+              {/* Avionics Telemetry Metrics */}
+              <div className="mt-14 grid grid-cols-2 gap-4 border-t border-white/10 pt-8 sm:grid-cols-4 font-mono">
+                <div>
+                  <span className="text-2xl sm:text-3xl font-bold text-white">Mach 0.86</span>
+                  <span className="block text-[11px] text-neutral-400 uppercase mt-1">Supersonic Cruise</span>
+                </div>
+                <div>
+                  <span className="text-2xl sm:text-3xl font-bold text-amber-300">100% Private</span>
+                  <span className="block text-[11px] text-neutral-400 uppercase mt-1">Enclosed Suites</span>
+                </div>
+                <div>
+                  <span className="text-2xl sm:text-3xl font-bold text-cyan-300">ICAO Doc 9303</span>
+                  <span className="block text-[11px] text-neutral-400 uppercase mt-1">Biometric Clearance</span>
+                </div>
+                <div>
+                  <span className="text-2xl sm:text-3xl font-bold text-white">3 Michelin*</span>
+                  <span className="block text-[11px] text-neutral-400 uppercase mt-1">Haute Cuisine</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Module 1: Flight Booking Engine */}
+          <section id="booking" className="py-12 px-4 max-w-7xl mx-auto">
+            <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0e1424] to-[#070a12] p-6 sm:p-8 shadow-2xl backdrop-blur-2xl">
+              {/* Trip selector and cabin tabs */}
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-5">
+                <div className="flex gap-2">
+                  <span className="rounded-xl bg-amber-400 px-4 py-2 text-xs font-bold text-neutral-950">
+                    {t('trip_round_trip')}
+                  </span>
+                  <span className="rounded-xl border border-white/10 px-4 py-2 text-xs text-neutral-400">
+                    {t('trip_one_way')}
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'first_suite', label: t('cabin_first_suite') },
+                    { id: 'business', label: t('cabin_business') },
+                    { id: 'premium_economy', label: t('cabin_premium_economy') },
+                    { id: 'economy', label: t('cabin_economy') },
+                  ].map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedCabin(c.id)}
+                      className={`rounded-xl px-3 py-1.5 text-xs font-medium border transition ${
+                        selectedCabin === c.id
+                          ? 'border-amber-400 bg-amber-400/20 text-amber-300'
+                          : 'border-white/10 bg-white/5 text-neutral-300 hover:border-white/20'
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Booking Input Grid */}
+              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                  <span className="block text-[11px] uppercase tracking-wider text-neutral-400">{t('label_origin')}</span>
+                  <select
+                    value={selectedFlight.origin.iata}
+                    onChange={(e) => {
+                      const found = AIRPORTS.find((a) => a.iata === e.target.value);
+                      if (found) setSelectedFlight({ ...selectedFlight, origin: found });
+                    }}
+                    className="mt-1 w-full bg-transparent font-serif text-lg font-bold text-white focus:outline-none"
+                  >
+                    {AIRPORTS.map((a) => (
+                      <option key={a.iata} value={a.iata} className="bg-[#0e1424] text-white">
+                        {a.city} ({a.iata})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                  <span className="block text-[11px] uppercase tracking-wider text-neutral-400">{t('label_destination')}</span>
+                  <select
+                    value={selectedFlight.destination.iata}
+                    onChange={(e) => {
+                      const found = AIRPORTS.find((a) => a.iata === e.target.value);
+                      if (found) setSelectedFlight({ ...selectedFlight, destination: found });
+                    }}
+                    className="mt-1 w-full bg-transparent font-serif text-lg font-bold text-white focus:outline-none"
+                  >
+                    {AIRPORTS.map((a) => (
+                      <option key={a.iata} value={a.iata} className="bg-[#0e1424] text-white">
+                        {a.city} ({a.iata})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                  <span className="block text-[11px] uppercase tracking-wider text-neutral-400">{t('label_depart_date')}</span>
+                  <input
+                    type="date"
+                    defaultValue="2026-10-15"
+                    className="mt-1 w-full bg-transparent text-sm font-semibold text-white focus:outline-none cursor-pointer"
+                  />
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3.5">
+                  <span className="block text-[11px] uppercase tracking-wider text-neutral-400">{t('label_passengers')}</span>
+                  <select className="mt-1 w-full bg-transparent font-bold text-white focus:outline-none">
+                    <option value="1" className="bg-[#0e1424]">1 Sovereign Traveler</option>
+                    <option value="2" className="bg-[#0e1424]">2 Travelers (Private Cabin)</option>
+                    <option value="4" className="bg-[#0e1424]">4 Travelers (Family Suite)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Fare Calendar Indicator */}
+              <div className="mt-6 border-t border-white/10 pt-4">
+                <span className="font-mono text-xs text-neutral-400 block mb-2">
+                  ESTIMATED FARES ({currencyConfig.code}):
+                </span>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                  {[
+                    { day: 'Oct 13', price: 9200 },
+                    { day: 'Oct 14', price: 9400 },
+                    { day: 'Oct 15 (Selected)', price: 9800, active: true },
+                    { day: 'Oct 16', price: 9100 },
+                    { day: 'Oct 17', price: 8900 },
+                    { day: 'Oct 18', price: 9350 }
+                  ].map((item, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl border p-2 text-center ${
+                        item.active
+                          ? 'border-amber-400 bg-amber-400/20 text-white'
+                          : 'border-white/10 bg-white/[0.02] text-neutral-400'
+                      }`}
+                    >
+                      <span className="block text-[10px]">{item.day}</span>
+                      <span className="block font-mono text-xs font-bold text-amber-300">
+                        {currencyConfig.format(item.price)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Flight Results Cards */}
+            <div className="mt-8 space-y-4">
+              {FLIGHTS.map((flight) => {
+                const isCurrent = selectedFlight.id === flight.id;
+                const fare = flight.basePricesUSD[selectedCabin];
+
+                return (
+                  <div
+                    key={flight.id}
+                    className={`rounded-3xl border p-6 transition ${
+                      isCurrent
+                        ? 'border-amber-400 bg-[#121829] shadow-xl shadow-amber-400/10'
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20'
+                    }`}
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="rounded bg-amber-400/20 px-2 py-0.5 font-mono text-xs font-bold text-amber-300 border border-amber-400/30">
+                            {flight.flightNumber}
+                          </span>
+                          <span className="text-xs text-neutral-400">{flight.aircraft}</span>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {flight.perks.map((p, idx) => (
+                            <span key={idx} className="rounded-full border border-cyan-500/30 bg-cyan-950/40 px-2 py-0.5 text-[10px] text-cyan-300">
+                              {p}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-8 text-center">
+                        <div>
+                          <span className="font-mono text-2xl font-bold text-white">{flight.departureTime}</span>
+                          <span className="block font-mono text-xs text-amber-300">{flight.origin.iata}</span>
+                        </div>
+                        <div className="font-mono text-xs text-neutral-400">
+                          {flight.duration} • Non-stop
+                          <div className="h-[2px] w-24 bg-gradient-to-r from-amber-400 to-cyan-400 my-1 mx-auto"></div>
+                        </div>
+                        <div>
+                          <span className="font-mono text-2xl font-bold text-white">{flight.arrivalTime}</span>
+                          <span className="block font-mono text-xs text-cyan-300">{flight.destination.iata}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between lg:flex-col lg:items-end gap-3">
+                        <div className="text-right">
+                          <span className="font-mono text-2xl font-bold text-amber-300">
+                            {currencyConfig.format(fare)}
+                          </span>
+                          <span className="block text-[10px] text-neutral-400">All-Inclusive Luxury</span>
+                        </div>
+                        <button
+                          onClick={() => setSelectedFlight(flight)}
+                          className={`rounded-xl px-5 py-2.5 text-xs font-bold uppercase tracking-wider transition ${
+                            isCurrent
+                              ? 'bg-emerald-500 text-neutral-950'
+                              : 'bg-amber-400 text-neutral-950 hover:bg-amber-300'
+                          }`}
+                        >
+                          {isCurrent ? 'Flight Selected ✓' : t('btn_select_flight')}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Module 2: 3D Seat Map */}
+          <section id="seats" className="py-12 px-4 max-w-7xl mx-auto border-t border-white/10">
+            <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <span className="font-mono text-xs text-amber-400 uppercase">Interactive Cabin Layout</span>
+                <h2 className="font-serif text-2xl sm:text-3xl font-bold text-white">{t('seat_map_title')}</h2>
+              </div>
+              <div className="flex gap-4 text-xs font-mono">
+                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-amber-400 bg-amber-400/20"></span> {t('seat_available')}</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-cyan-400"></span> {t('seat_selected')}</span>
+                <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded bg-neutral-800"></span> {t('seat_occupied')}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Aircraft Cabin Fuselage */}
+              <div className="rounded-3xl border border-white/15 bg-gradient-to-b from-[#0a0e1a] to-[#04060a] p-6 lg:col-span-8">
+                <div className="mx-auto mb-6 w-32 h-10 rounded-t-full border-t-2 border-x-2 border-amber-400/40 text-center text-[10px] font-mono text-amber-300 pt-1">
+                  COCKPIT
+                </div>
+
+                {/* ZONE 1: Royal Suites */}
+                <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-500/5 p-4">
+                  <div className="mb-3 text-xs font-mono text-amber-300 font-bold">
+                    ZONE 1: SOVEREIGN ROYAL SUITES (1-1-1 Enclosed)
+                  </div>
+                  <div className="space-y-3">
+                    {[1, 2].map((r) => (
+                      <div key={r} className="flex justify-between items-center gap-2">
+                        {INITIAL_SEATS.filter((s) => s.row === r).map((seat) => {
+                          const isSel = selectedSeats.some((s) => s.id === seat.id);
+                          return (
+                            <button
+                              key={seat.id}
+                              disabled={seat.isOccupied}
+                              onClick={() => toggleSeat(seat)}
+                              className={`flex-1 h-20 rounded-xl border p-2 flex flex-col justify-between items-center transition ${
+                                seat.isOccupied
+                                  ? 'opacity-30 border-neutral-800 bg-neutral-900 cursor-not-allowed'
+                                  : isSel
+                                  ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 ring-2 ring-cyan-400'
+                                  : 'border-amber-400/40 bg-white/5 text-neutral-200 hover:border-amber-400'
+                              }`}
+                            >
+                              <span className="font-mono text-xs font-bold">SUITE {seat.id}</span>
+                              <span className="text-[10px] text-amber-300">{seat.isOccupied ? 'Occupied' : currencyConfig.format(seat.priceUSD)}</span>
+                              <span className="text-[9px] uppercase tracking-wider text-neutral-400">{isSel ? 'SELECTED' : 'ROYAL'}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* ZONE 2: Business & Premium */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                  <div className="mb-3 text-xs font-mono text-neutral-400 font-bold">
+                    ZONE 2: AURA BUSINESS LIE-FLAT & PRESTIGE
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {INITIAL_SEATS.filter((s) => s.row >= 3).map((seat) => {
+                      const isSel = selectedSeats.some((s) => s.id === seat.id);
+                      return (
+                        <button
+                          key={seat.id}
+                          disabled={seat.isOccupied}
+                          onClick={() => toggleSeat(seat)}
+                          className={`h-12 rounded-lg border text-xs font-mono font-bold flex flex-col items-center justify-center transition ${
+                            seat.isOccupied
+                              ? 'opacity-30 border-neutral-800 bg-neutral-900 cursor-not-allowed'
+                              : isSel
+                              ? 'border-cyan-400 bg-cyan-500 text-black'
+                              : 'border-white/10 bg-white/5 text-neutral-300 hover:border-amber-400'
+                          }`}
+                        >
+                          <span>{seat.id}</span>
+                          <span className="text-[9px] font-normal">{seat.isOccupied ? 'X' : currencyConfig.symbol}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Selection Summary Sidebar */}
+              <div className="rounded-3xl border border-white/15 bg-[#0e1424] p-6 flex flex-col justify-between lg:col-span-4">
+                <div>
+                  <h3 className="font-serif text-lg font-bold text-white border-b border-white/10 pb-3">
+                    Seat & Suite Upgrade Summary
+                  </h3>
+                  <div className="mt-4 space-y-3 text-xs font-mono">
+                    <div className="flex justify-between text-neutral-400">
+                      <span>Selected Count:</span>
+                      <span className="text-white font-bold">{selectedSeats.length} Seat(s)</span>
+                    </div>
+                    <div className="flex justify-between text-neutral-400">
+                      <span>Seat IDs:</span>
+                      <span className="text-amber-300 font-bold">
+                        {selectedSeats.map((s) => s.id).join(', ') || 'None'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-neutral-400">
+                      <span>Upgrade Total:</span>
+                      <span className="text-xl font-bold text-white">
+                        {currencyConfig.format(selectedSeats.reduce((a, b) => a + b.priceUSD, 0))}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 rounded-xl border border-amber-400/20 bg-amber-500/5 p-3 text-xs text-neutral-300">
+                    <p className="text-[11px] leading-relaxed">{t('seat_suite_perks')}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <button
+                    onClick={() => setIsBoardingPassOpen(true)}
+                    className="w-full rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-xs font-bold uppercase tracking-wider text-neutral-950 shadow-lg shadow-amber-400/20 hover:from-amber-300 transition"
+                  >
+                    Generate Sovereign Boarding Pass
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* e-KYC Modal with Live WebRTC Camera */}
+          {isKycModalOpen && (
+            <KycModal
+              destination={selectedFlight.destination}
+              onClose={() => setIsKycModalOpen(false)}
+              onVerified={(data) => {
+                setKycData(data);
+                setIsKycModalOpen(false);
+              }}
+              t={t}
+            />
+          )}
+
+          {/* Boarding Pass Modal */}
+          {isBoardingPassOpen && (
+            <BoardingPassModalView
+              flight={selectedFlight}
+              seat={selectedSeats[0] || null}
+              kycData={kycData}
+              currencyConfig={currencyConfig}
+              onClose={() => setIsBoardingPassOpen(false)}
+              t={t}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // --- SUB-COMPONENT: WEBRTC e-KYC MODAL ---
+    function KycModal({ destination, onClose, onVerified, t }) {
+      const [stage, setStage] = useState('PASSPORT'); // PASSPORT -> FACE -> DONE
+      const [cameraActive, setCameraActive] = useState(false);
+      const [processing, setProcessing] = useState(false);
+      const videoRef = useRef(null);
+      const streamRef = useRef(null);
+
+      useEffect(() => {
+        let active = true;
+        navigator.mediaDevices?.getUserMedia({ video: { width: 1280, height: 720 }, audio: false })
+          .then((stream) => {
+            if (active) {
+              streamRef.current = stream;
+              if (videoRef.current) videoRef.current.srcObject = stream;
+              setCameraActive(true);
+            }
+          })
+          .catch((err) => {
+            console.log('WebRTC camera simulation active:', err);
+            setCameraActive(false);
+          });
+
+        return () => {
+          active = false;
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach((track) => track.stop());
+          }
+        };
+      }, []);
+
+      const capturePassport = () => {
+        setProcessing(true);
+        setTimeout(() => {
+          setProcessing(false);
+          setStage('FACE');
+        }, 1200);
+      };
+
+      const verifyFace = () => {
+        setProcessing(true);
+        setTimeout(() => {
+          const verifiedData = {
+            fullName: 'HIS HIGHNESS TARIQ AL-HASHIMI',
+            passportNumber: 'N9872140A',
+            nationality: 'ARE (United Arab Emirates)',
+            expiryDate: '2032-11-09',
+            gender: 'M',
+            icaoVerified: true,
+            mrzRaw: 'P<AREAL<HASHIMI<<TARIQ<<<<<<<<<<<<<<<<<<<<<<<\nN9872140A3ARE8804144M3211096<<<<<<<<<<<<<<04',
+            visaStatus: 'EXEMPT'
+          };
+          setProcessing(false);
+          setStage('DONE');
+          onVerified(verifiedData);
+        }, 1500);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl">
+          <div className="relative w-full max-w-3xl overflow-hidden rounded-3xl border border-amber-400/40 bg-[#0a0d14] shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-white/10 bg-[#0e1424] px-6 py-4">
+              <div>
+                <h3 className="font-serif text-lg font-bold text-white">Bank-Grade e-KYC Passport Verification</h3>
+                <p className="text-xs text-neutral-400">ICAO Doc 9303 Compliant • WebRTC Telemetry Active</p>
+              </div>
+              <button onClick={onClose} className="text-neutral-400 hover:text-white">✕</button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+                {/* Camera Viewport */}
+                <div className="relative aspect-video w-full rounded-2xl border border-white/15 bg-neutral-950 overflow-hidden md:col-span-8 flex items-center justify-center">
+                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+
+                  {!cameraActive && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-neutral-900/90 p-4 text-center">
+                      <div className="h-16 w-16 rounded-2xl border border-amber-400/40 bg-amber-500/10 flex items-center justify-center text-amber-300 font-mono text-2xl mb-2">
+                        ICAO
+                      </div>
+                      <span className="font-bold text-white text-sm">WebRTC Optical Scanner Simulation</span>
+                      <span className="text-xs text-neutral-400 mt-1">Camera guide reticles active</span>
+                    </div>
+                  )}
+
+                  {/* Stage 1 Laser Bounding Guide */}
+                  {stage === 'PASSPORT' && (
+                    <div className="pointer-events-none absolute inset-4 rounded-xl border-2 border-dashed border-amber-400/70 flex flex-col justify-between p-2">
+                      <div className="flex justify-between text-[10px] font-mono text-amber-300">
+                        <span>┌ FOCUS ZONE</span>
+                        <span>16:9 RATIO ┐</span>
+                      </div>
+                      <div className="w-full h-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent shadow-[0_0_15px_#d4af37] animate-laser"></div>
+                      <div className="text-center font-mono text-[10px] text-amber-300 bg-black/60 py-1 rounded">
+                        ALIGN MACHINE READABLE PASSPORT ZONE
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stage 2 Biometric Oval */}
+                  {stage === 'FACE' && (
+                    <div className="pointer-events-none absolute h-56 w-44 rounded-[50%] border-2 border-dashed border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.4)] flex items-center justify-center">
+                      <div className="text-center font-mono text-[10px] text-cyan-300">
+                        BIOMETRIC MESH LOCKED
+                      </div>
+                    </div>
+                  )}
+
+                  {processing && (
+                    <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center font-mono text-xs text-amber-300">
+                      <div className="h-8 w-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin mb-2"></div>
+                      CRYPTOGRAPHIC VALIDATION IN PROGRESS...
+                    </div>
+                  )}
+                </div>
+
+                {/* Controls Sidebar */}
+                <div className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-5 md:col-span-4">
+                  <div>
+                    <h4 className="font-serif text-base font-bold text-amber-300">
+                      {stage === 'PASSPORT' ? t('scanner_step1_title') : t('scanner_step2_title')}
+                    </h4>
+                    <p className="mt-2 text-xs text-neutral-300 leading-relaxed">
+                      {stage === 'PASSPORT' ? t('scanner_step1_desc') : t('scanner_step2_desc')}
+                    </p>
+                  </div>
+
+                  <div className="mt-6">
+                    {stage === 'PASSPORT' ? (
+                      <button
+                        onClick={capturePassport}
+                        disabled={processing}
+                        className="w-full rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-xs font-bold uppercase tracking-wider text-neutral-950 shadow-lg shadow-amber-400/20 hover:from-amber-300 transition"
+                      >
+                        {t('camera_capture_passport')}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={verifyFace}
+                        disabled={processing}
+                        className="w-full rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 py-3 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-cyan-400/20 hover:from-cyan-300 transition"
+                      >
+                        {t('camera_capture_face')}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // --- SUB-COMPONENT: BOARDING PASS MODAL VIEW ---
+    function BoardingPassModalView({ flight, seat, kycData, currencyConfig, onClose, t }) {
+      return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-xl">
+          <div className="relative w-full max-w-2xl rounded-3xl border border-amber-400/40 bg-[#0a0d14] p-6 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-white/10 pb-4 mb-4">
+              <span className="font-serif text-lg font-bold text-white">AURA AERO • ROYAL BOARDING PASS</span>
+              <button onClick={onClose} className="text-neutral-400 hover:text-white">✕</button>
+            </div>
+
+            <div className="rounded-2xl border border-amber-400/30 bg-[#0e1424] p-6">
+              <div className="flex justify-between border-b border-white/10 pb-4">
+                <div>
+                  <span className="text-[10px] font-mono text-neutral-400 block">PASSENGER NAME</span>
+                  <span className="font-bold text-white text-base">
+                    {kycData ? kycData.fullName : 'HIS HIGHNESS TARIQ AL-HASHIMI'}
+                  </span>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-mono text-neutral-400 block">FLIGHT & SUITE</span>
+                  <span className="font-mono font-bold text-amber-300">
+                    {flight.flightNumber} • {seat ? seat.id : '1A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="my-6 flex justify-between items-center text-center">
+                <div>
+                  <span className="font-mono text-3xl font-bold text-white">{flight.origin.iata}</span>
+                  <span className="block text-xs text-neutral-400">{flight.origin.city}</span>
+                </div>
+                <div className="text-xs font-mono text-cyan-300">
+                  {flight.duration}
+                  <div className="h-[2px] w-28 bg-gradient-to-r from-amber-400 to-cyan-400 my-1"></div>
+                  NON-STOP
+                </div>
+                <div>
+                  <span className="font-mono text-3xl font-bold text-white">{flight.destination.iata}</span>
+                  <span className="block text-xs text-neutral-400">{flight.destination.city}</span>
+                </div>
+              </div>
+
+              {/* High Resolution SVG QR Simulation */}
+              <div className="flex items-center justify-between border-t border-dashed border-white/20 pt-4">
+                <div className="h-20 w-20 bg-white p-1.5 rounded-xl">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <rect width="100" height="100" fill="white" />
+                    <rect x="5" y="5" width="30" height="30" fill="#07090e" />
+                    <rect x="10" y="10" width="20" height="20" fill="white" />
+                    <rect x="14" y="14" width="12" height="12" fill="#07090e" />
+                    <rect x="65" y="5" width="30" height="30" fill="#07090e" />
+                    <rect x="70" y="10" width="20" height="20" fill="white" />
+                    <rect x="74" y="14" width="12" height="12" fill="#07090e" />
+                    <rect x="5" y="65" width="30" height="30" fill="#07090e" />
+                    <rect x="10" y="70" width="20" height="20" fill="white" />
+                    <rect x="14" y="74" width="12" height="12" fill="#07090e" />
+                    <rect x="42" y="15" width="8" height="8" fill="#07090e" />
+                    <rect x="45" y="45" width="14" height="14" fill="#07090e" />
+                    <rect x="70" y="70" width="15" height="15" fill="#07090e" />
+                  </svg>
+                </div>
+                <div className="text-right font-mono text-xs">
+                  <span className="block text-neutral-400">BOARDING GATE: A12</span>
+                  <span className="block text-cyan-300 font-bold">STATUS: ICAO PKD CLEARED</span>
+                  <span className="block text-[10px] text-neutral-500 mt-1">PNR: AU99X2</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => alert('Synced with Apple Wallet!')}
+                className="flex-1 rounded-xl border border-white/20 bg-white/5 py-2.5 text-xs font-semibold text-white hover:bg-white/10"
+              >
+                {t('btn_apple_wallet')}
+              </button>
+              <button
+                onClick={() => alert('Synced with Google Wallet!')}
+                className="flex-1 rounded-xl border border-white/20 bg-white/5 py-2.5 text-xs font-semibold text-white hover:bg-white/10"
+              >
+                {t('btn_google_wallet')}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Render the React application into the DOM
+    ReactDOM.render(<AirlineApp />, document.getElementById('root'));
+  </script>
+</body>
+</html>
