@@ -1,6 +1,6 @@
-export type LanguageCode = 'en' | 'ur' | 'fr' | 'ar' | 'es' | 'zh';
+export type LanguageCode = 'en' | 'ur' | 'ar' | 'fr' | 'es' | 'zh';
 export type Direction = 'ltr' | 'rtl';
-export type CurrencyCode = 'USD' | 'EUR' | 'PKR' | 'AED' | 'CNY' | 'GBP';
+export type CurrencyCode = 'PKR' | 'USD' | 'AED' | 'EUR' | 'GBP' | 'CNY';
 
 export interface CurrencyConfig {
   code: CurrencyCode;
@@ -14,12 +14,12 @@ export interface Airport {
   city: string;
   country: string;
   name: string;
-  timezone: string;
+  isDomestic?: boolean;
 }
 
-export type CabinClass = 'economy' | 'premium_economy' | 'business' | 'first_suite';
+export type CabinClass = 'economy' | 'business' | 'first_suite';
 
-export type TripType = 'round_trip' | 'one_way' | 'multi_city';
+export type TripType = 'round_trip' | 'one_way';
 
 export interface Flight {
   id: string;
@@ -31,53 +31,54 @@ export interface Flight {
   duration: string;
   aircraft: string;
   stops: number;
+  stopDescription?: string;
   basePricesUSD: Record<CabinClass, number>;
-  perks: string[];
+  baggageAllowance: string;
+  mealIncluded: string;
 }
 
-export interface KycPassportData {
+export interface UserProfile {
   fullName: string;
-  passportNumber: string;
+  cnic: string; // e.g. 35201-1234567-1
+  email: string;
+  phone: string;
+  passportNumber?: string;
   nationality: string;
-  dateOfBirth: string;
-  expiryDate: string;
-  gender: 'M' | 'F' | 'X';
-  mrzRaw: string;
-  icaoVerified: boolean;
-  biometricMatchConfidence: number;
-  visaStatus: 'EXEMPT' | 'REQUIRED' | 'EVisa_ELIGIBLE' | 'CHECKING';
-  visaNotes?: string;
+  loyaltyTier: 'Classic' | 'Silver' | 'Gold' | 'Empyrean VIP';
+  milesBalance: number;
 }
 
-export type SeatCategory = 'first_suite' | 'business_lie_flat' | 'premium_legroom' | 'economy_standard';
-export type SeatFeature = 'window' | 'aisle' | 'middle' | 'extra_legroom' | 'bassinet' | 'emergency_exit';
+export interface PassengerBookingDetails {
+  fullName: string;
+  cnic: string;
+  passportNumber: string;
+  phone: string;
+  email: string;
+  dateOfBirth: string;
+  gender: 'M' | 'F';
+  nationality: string;
+  mealPreference: string;
+  specialAssistance: string;
+}
 
 export interface Seat {
   id: string;
   row: number;
   col: string;
-  category: SeatCategory;
-  features: SeatFeature[];
+  category: 'royal_suite' | 'business_flat' | 'economy_plus' | 'economy';
   priceUSD: number;
   isOccupied: boolean;
-  isSelected?: boolean;
+  features: string[];
 }
 
-export interface BookingState {
-  tripType: TripType;
-  origin: Airport;
-  destination: Airport;
-  departureDate: string;
-  returnDate: string;
-  passengers: {
-    adults: number;
-    children: number;
-    infants: number;
-  };
-  cabinClass: CabinClass;
-  selectedFlight?: Flight;
-  selectedSeats: Seat[];
-  kycData?: KycPassportData;
-  pnr?: string;
-  totalPriceUSD: number;
+export interface ConfirmedBooking {
+  pnr: string;
+  eTicketNumber: string;
+  flight: Flight;
+  cabin: CabinClass;
+  passenger: PassengerBookingDetails;
+  seatId: string;
+  totalPaidUSD: number;
+  bookingDate: string;
+  status: 'CONFIRMED' | 'ISSUED';
 }

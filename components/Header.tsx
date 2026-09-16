@@ -2,18 +2,18 @@
 
 import React, { useState } from 'react';
 import { LANGUAGES, CURRENCIES } from '../lib/i18n';
-import { LanguageCode, CurrencyCode, Direction } from '../types/airline';
-import { Globe, DollarSign, ShieldCheck, Compass, Plane, ChevronDown, Check, Sparkles } from 'lucide-react';
+import { LanguageCode, CurrencyCode, UserProfile } from '../types/airline';
+import { Plane, User, Globe, DollarSign, LogOut, ChevronDown, Check, ShieldCheck } from 'lucide-react';
 
 interface HeaderProps {
   currentLang: LanguageCode;
   onLanguageChange: (lang: LanguageCode) => void;
   currentCurrency: CurrencyCode;
   onCurrencyChange: (curr: CurrencyCode) => void;
-  direction: Direction;
-  onToggleDirection: () => void;
-  onOpenKycModal: () => void;
-  isKycVerified: boolean;
+  currentUser: UserProfile | null;
+  onOpenAuth: () => void;
+  onLogout: () => void;
+  onOpenKyc: () => void;
   t: (key: string) => string;
 }
 
@@ -22,201 +22,150 @@ export const Header: React.FC<HeaderProps> = ({
   onLanguageChange,
   currentCurrency,
   onCurrencyChange,
-  direction,
-  onToggleDirection,
-  onOpenKycModal,
-  isKycVerified,
+  currentUser,
+  onOpenAuth,
+  onLogout,
+  onOpenKyc,
   t
 }) => {
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
-  const [isCurrMenuOpen, setIsCurrMenuOpen] = useState(false);
-
-  const activeLangMeta = LANGUAGES[currentLang];
-  const activeCurrencyMeta = CURRENCIES[currentCurrency];
+  const [isLangOpen, setIsLangOpen] = useState(false);
+  const [isCurrOpen, setIsCurrOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#07090e]/80 backdrop-blur-xl transition-all duration-300">
-      {/* Top micro-bar for VIP Concierge and dynamic direction indicator */}
-      <div className="w-full border-b border-white/5 bg-gradient-to-r from-amber-500/10 via-cyan-500/10 to-amber-500/10 px-4 py-1 text-xs text-neutral-400">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-block h-2 w-2 animate-ping rounded-full bg-cyan-400"></span>
-            <span className="font-mono tracking-widest text-cyan-300 uppercase">
-              Global Sovereign Network • Fleet Status: Active
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={onToggleDirection}
-              className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-black/40 px-2.5 py-0.5 font-mono text-[11px] text-amber-300 hover:border-amber-400 transition"
-              title="Manual Layout Direction Switcher"
-            >
-              <Compass className="h-3 w-3 text-amber-400" />
-              <span>Direction: {direction.toUpperCase()}</span>
-            </button>
-            <span className="hidden sm:inline-block font-mono text-neutral-400">
-              VIP Concierge: +971 4 AURA-VIP
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Navigation Bar */}
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-        {/* Brand Logo & Tagline */}
+    <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#0a0f1d]/90 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
+        {/* Brand Name & Crest */}
         <div className="flex items-center gap-3">
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/40 bg-gradient-to-br from-neutral-900 to-black shadow-lg shadow-amber-500/10">
-            <Plane className="h-6 w-6 text-amber-400 transform -rotate-45" />
-            <div className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-cyan-500 ring-2 ring-[#07090e]">
-              <Sparkles className="h-2 w-2 text-black" />
-            </div>
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-950 shadow-lg shadow-amber-500/20">
+            <Plane className="h-6 w-6 transform -rotate-45" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-serif text-xl font-bold tracking-widest text-white sm:text-2xl">
-                {t('brand_name')}
+              <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-white">
+                {currentLang === 'ur' ? 'امپیریئن ایئرویز' : 'EMPYREAN'}
               </span>
-              <span className="rounded bg-amber-400/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-300 border border-amber-400/30">
-                Flagship
+              <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-bold text-amber-300 border border-amber-400/30">
+                AIRWAYS
               </span>
             </div>
-            <p className="hidden text-[11px] font-light tracking-wider text-neutral-400 sm:block">
+            <p className="text-[11px] text-neutral-400">
               {t('brand_tagline')}
             </p>
           </div>
         </div>
 
-        {/* Desktop Nav Links */}
-        <nav className="hidden xl:flex items-center gap-8 text-sm font-medium text-neutral-300">
-          <a href="#booking-engine" className="hover:text-amber-300 transition-colors">
-            {t('nav_flights')}
-          </a>
-          <a href="#seat-map" className="hover:text-amber-300 transition-colors">
-            {t('nav_suites')}
-          </a>
-          <a href="#dining" className="hover:text-amber-300 transition-colors">
-            {t('nav_experience')}
-          </a>
-          <a href="#circle" className="hover:text-amber-300 transition-colors">
-            {t('nav_membership')}
-          </a>
-        </nav>
-
-        {/* Action Controls: e-KYC Modal Trigger, Currency Switcher, Language Switcher */}
+        {/* Action Controls: Auth, Currency, Language */}
         <div className="flex items-center gap-2.5 sm:gap-3">
-          {/* Bank-Grade e-KYC Trigger */}
+          {/* User Profile / Login */}
+          {currentUser ? (
+            <div className="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-neutral-950 font-bold">
+                {currentUser.fullName.charAt(0)}
+              </div>
+              <div className="hidden sm:block text-start">
+                <span className="block font-bold text-white leading-tight">
+                  {currentUser.fullName}
+                </span>
+                <span className="block font-mono text-[10px] text-amber-300">
+                  CNIC: {currentUser.cnic}
+                </span>
+              </div>
+              <button
+                onClick={onLogout}
+                className="ms-1 rounded-lg p-1 text-neutral-400 hover:text-red-400 hover:bg-white/5 transition"
+                title={t('nav_logout')}
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 hover:to-amber-400 transition"
+            >
+              <User className="h-4 w-4" />
+              <span>{t('nav_login')} / {t('nav_register')}</span>
+            </button>
+          )}
+
+          {/* e-KYC Verification Trigger */}
           <button
-            onClick={onOpenKycModal}
-            className={`group relative flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold tracking-wide transition-all duration-300 shadow-md ${
-              isKycVerified
-                ? 'border border-emerald-500/50 bg-emerald-950/40 text-emerald-300 shadow-emerald-500/20'
-                : 'border border-cyan-500/40 bg-cyan-950/30 text-cyan-300 hover:border-cyan-400 hover:bg-cyan-900/40 shadow-cyan-500/20'
-            }`}
+            onClick={onOpenKyc}
+            className="hidden sm:flex items-center gap-1.5 rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-2 text-xs font-medium text-cyan-300 hover:bg-cyan-900/40 transition"
+            title="Passport & Biometric Verification"
           >
-            <ShieldCheck className={`h-4 w-4 ${isKycVerified ? 'text-emerald-400' : 'text-cyan-400 group-hover:scale-110 transition-transform'}`} />
-            <span className="hidden md:inline">
-              {isKycVerified ? t('badge_verified') : t('btn_kyc_verification')}
-            </span>
-            <span className="md:hidden">
-              {isKycVerified ? 'ICAO Verified' : 'e-KYC'}
-            </span>
-            <span className="relative flex h-2 w-2">
-              <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${isKycVerified ? 'bg-emerald-400' : 'bg-cyan-400'}`}></span>
-              <span className={`relative inline-flex h-2 w-2 rounded-full ${isKycVerified ? 'bg-emerald-500' : 'bg-cyan-500'}`}></span>
-            </span>
+            <ShieldCheck className="h-4 w-4 text-cyan-400" />
+            <span className="text-[11px]">e-KYC</span>
           </button>
 
-          {/* Currency Dropdown */}
+          {/* Currency Switcher */}
           <div className="relative">
             <button
               onClick={() => {
-                setIsCurrMenuOpen(!isCurrMenuOpen);
-                setIsLangMenuOpen(false);
+                setIsCurrOpen(!isCurrOpen);
+                setIsLangOpen(false);
               }}
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs font-medium text-neutral-200 hover:border-amber-400/40 hover:bg-white/10 transition"
-              aria-label="Select Currency"
+              className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs font-mono font-bold text-amber-300 hover:border-amber-400/40 transition"
             >
-              <DollarSign className="h-3.5 w-3.5 text-amber-400" />
-              <span className="font-mono font-semibold text-amber-300">{activeCurrencyMeta.code}</span>
-              <span className="text-neutral-400">({activeCurrencyMeta.symbol})</span>
-              <ChevronDown className={`h-3 w-3 text-neutral-400 transition-transform duration-200 ${isCurrMenuOpen ? 'rotate-180' : ''}`} />
+              <span>{CURRENCIES[currentCurrency].symbol}</span>
+              <span>{currentCurrency}</span>
+              <ChevronDown className="h-3 w-3 text-neutral-400" />
             </button>
 
-            {isCurrMenuOpen && (
-              <div className="absolute end-0 mt-2 w-44 rounded-xl border border-white/15 bg-[#0e131f] p-1.5 shadow-2xl backdrop-blur-2xl ring-1 ring-black/50 z-50">
-                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400 border-b border-white/10 mb-1">
-                  Global Currencies
-                </div>
-                {Object.values(CURRENCIES).map((curr) => (
+            {isCurrOpen && (
+              <div className="absolute end-0 mt-2 w-36 rounded-xl border border-white/15 bg-[#0e1424] p-1 shadow-2xl backdrop-blur-xl z-50">
+                {Object.values(CURRENCIES).map((c) => (
                   <button
-                    key={curr.code}
+                    key={c.code}
                     onClick={() => {
-                      onCurrencyChange(curr.code);
-                      setIsCurrMenuOpen(false);
+                      onCurrencyChange(c.code);
+                      setIsCurrOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-left text-xs transition ${
-                      curr.code === currentCurrency
-                        ? 'bg-amber-500/20 text-amber-300 font-semibold'
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition ${
+                      c.code === currentCurrency
+                        ? 'bg-amber-400/20 text-amber-300 font-bold'
                         : 'text-neutral-300 hover:bg-white/5'
                     }`}
                   >
-                    <span className="flex items-center gap-2">
-                      <span className="font-mono text-amber-400">{curr.symbol}</span>
-                      <span>{curr.code}</span>
-                    </span>
-                    {curr.code === currentCurrency && <Check className="h-3 w-3 text-amber-400" />}
+                    <span>{c.code} ({c.symbol})</span>
+                    {c.code === currentCurrency && <Check className="h-3 w-3 text-amber-400" />}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Internationalization (Language Switcher) */}
+          {/* Language Switcher */}
           <div className="relative">
             <button
               onClick={() => {
-                setIsLangMenuOpen(!isLangMenuOpen);
-                setIsCurrMenuOpen(false);
+                setIsLangOpen(!isLangOpen);
+                setIsCurrOpen(false);
               }}
-              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs font-medium text-neutral-200 hover:border-amber-400/40 hover:bg-white/10 transition"
-              aria-label="Select Language"
+              className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-2 text-xs font-medium text-white hover:border-amber-400/40 transition"
             >
               <Globe className="h-3.5 w-3.5 text-cyan-400" />
-              <span className="font-medium">{activeLangMeta.nativeName}</span>
-              <span className="rounded bg-white/10 px-1 py-0.2 text-[9px] uppercase text-neutral-400">
-                {activeLangMeta.dir.toUpperCase()}
-              </span>
-              <ChevronDown className={`h-3 w-3 text-neutral-400 transition-transform duration-200 ${isLangMenuOpen ? 'rotate-180' : ''}`} />
+              <span>{LANGUAGES[currentLang].nativeName}</span>
+              <ChevronDown className="h-3 w-3 text-neutral-400" />
             </button>
 
-            {isLangMenuOpen && (
-              <div className="absolute end-0 mt-2 w-56 rounded-xl border border-white/15 bg-[#0e131f] p-1.5 shadow-2xl backdrop-blur-2xl ring-1 ring-black/50 z-50">
-                <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-neutral-400 border-b border-white/10 mb-1">
-                  Language & Locale (i18n)
-                </div>
-                {Object.values(LANGUAGES).map((lang) => (
+            {isLangOpen && (
+              <div className="absolute end-0 mt-2 w-40 rounded-xl border border-white/15 bg-[#0e1424] p-1 shadow-2xl backdrop-blur-xl z-50">
+                {Object.values(LANGUAGES).map((l) => (
                   <button
-                    key={lang.code}
+                    key={l.code}
                     onClick={() => {
-                      onLanguageChange(lang.code);
-                      setIsLangMenuOpen(false);
+                      onLanguageChange(l.code);
+                      setIsLangOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-2 text-left text-xs transition ${
-                      lang.code === currentLang
-                        ? 'bg-cyan-500/20 text-cyan-300 font-semibold'
+                    className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs transition ${
+                      l.code === currentLang
+                        ? 'bg-cyan-500/20 text-cyan-300 font-bold'
                         : 'text-neutral-300 hover:bg-white/5'
                     }`}
                   >
-                    <div className="flex flex-col">
-                      <span className="font-medium text-white">{lang.nativeName}</span>
-                      <span className="text-[10px] text-neutral-400">{lang.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${lang.dir === 'rtl' ? 'bg-purple-900/60 text-purple-300 border border-purple-500/30' : 'bg-neutral-800 text-neutral-400'}`}>
-                        {lang.dir.toUpperCase()}
-                      </span>
-                      {lang.code === currentLang && <Check className="h-3.5 w-3.5 text-cyan-400" />}
-                    </div>
+                    <span>{l.nativeName}</span>
+                    <span className="text-[10px] text-neutral-400 uppercase font-mono">{l.dir}</span>
                   </button>
                 ))}
               </div>
