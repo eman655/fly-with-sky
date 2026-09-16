@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Header } from '../components/Header';
+import { FleetGallery } from '../components/FleetGallery';
+import { Footer } from '../components/Footer';
 import { FlightBookingEngine } from '../components/FlightBookingEngine';
 import { InteractiveSeatMap } from '../components/InteractiveSeatMap';
 import { PassportVerificationModal } from '../components/PassportVerificationModal';
@@ -19,14 +21,13 @@ import {
   UserProfile,
   ConfirmedBooking
 } from '../types/airline';
-import { ShieldCheck, Plane, CheckCircle2, Ticket } from 'lucide-react';
 
 export default function Home() {
-  const [lang, setLang] = useState<LanguageCode>('ur'); // Default to Urdu for friendly local experience
-  const [currency, setCurrency] = useState<CurrencyCode>('PKR'); // Default to PKR
-  const [dir, setDir] = useState<Direction>('rtl');
+  const [lang, setLang] = useState<LanguageCode>('en');
+  const [currency, setCurrency] = useState<CurrencyCode>('PKR');
+  const [dir, setDir] = useState<Direction>('ltr');
 
-  // Active User Profile (from localStorage)
+  // Active User Profile
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
 
@@ -40,10 +41,9 @@ export default function Home() {
   const [isKycOpen, setIsKycOpen] = useState(false);
   const [isBoardingPassOpen, setIsBoardingPassOpen] = useState(false);
 
-  // Restore saved session from localStorage on mount
   useEffect(() => {
     try {
-      const savedUser = localStorage.getItem('empyrean_current_user');
+      const savedUser = localStorage.getItem('flywithsky_user');
       if (savedUser) {
         setCurrentUser(JSON.parse(savedUser));
       }
@@ -51,7 +51,7 @@ export default function Home() {
   }, []);
 
   const t = (key: string): string => {
-    return TRANSLATIONS[lang]?.[key] || TRANSLATIONS.ur[key] || TRANSLATIONS.en[key] || key;
+    return TRANSLATIONS[lang]?.[key] || TRANSLATIONS.en[key] || key;
   };
 
   const handleLanguageChange = (newLang: LanguageCode) => {
@@ -65,17 +65,17 @@ export default function Home() {
   const handleLogout = () => {
     setCurrentUser(null);
     try {
-      localStorage.removeItem('empyrean_current_user');
+      localStorage.removeItem('flywithsky_user');
     } catch {}
   };
 
   return (
     <div
       dir={dir}
-      className="min-h-screen bg-[#070a12] text-neutral-100 selection:bg-amber-400 selection:text-black antialiased"
+      className="min-h-screen bg-[#060a14] text-neutral-100 selection:bg-amber-400 selection:text-black antialiased flex flex-col justify-between"
       style={{ fontFamily: LANGUAGES[lang].fontFamily }}
     >
-      {/* Clean Global Header */}
+      {/* 1. Master Header with "The Fly With Sky" Branding */}
       <Header
         currentLang={lang}
         onLanguageChange={handleLanguageChange}
@@ -85,76 +85,85 @@ export default function Home() {
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
         onOpenKyc={() => setIsKycOpen(true)}
+        onViewBookings={() => setIsBoardingPassOpen(true)}
         t={t}
       />
 
-      {/* Clean, Friendly Hero Section */}
-      <section className="relative overflow-hidden pt-8 pb-10 border-b border-white/10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1 text-xs font-bold text-amber-300 mb-4">
-            <span>✦ امپیریئن ایئرویز (EMPYREAN AIRWAYS) ✦</span>
+      <main className="flex-1">
+        {/* 2. Elevated Hero Section */}
+        <section id="hero" className="relative py-12 lg:py-16 px-4 text-center border-b border-white/10 bg-gradient-to-b from-[#080d19] to-[#060a14]">
+          <div className="max-w-4xl mx-auto">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/40 bg-amber-400/10 px-4 py-1.5 text-xs font-bold text-amber-300 mb-4 shadow-md">
+              <span>✦ The Fly With Sky — Flagship Global Aviation ✦</span>
+            </div>
+
+            <h1 className="font-serif text-4xl sm:text-6xl font-bold tracking-tight text-white leading-tight">
+              {lang === 'ur'
+                ? 'دی فلائی ود سکائی — ایک باوقار سفر کا آغاز'
+                : 'Fly with Grace, Luxury & Complete Ease'}
+            </h1>
+
+            <p className="mt-4 text-sm sm:text-base text-neutral-300 max-w-2xl mx-auto leading-relaxed">
+              {lang === 'ur'
+                ? 'لاہور، کراچی، اسلام آباد، دبئی، نیویارک اور لندن کے لیے پریمیئر پروازیں سب سے شفاف کرایوں اور شاہی انداز میں بک کریں۔'
+                : 'Experience intercontinental flagship routes connecting Lahore, Karachi, Islamabad, Dubai, New York, and London with effortless digital booking.'}
+            </p>
           </div>
+        </section>
 
-          <h1 className="font-serif text-3xl sm:text-5xl font-bold tracking-tight text-white leading-tight">
-            {t('hero_title')}
-          </h1>
+        {/* 3. Core Flight Booking Engine (Mandatory CNIC & Phone data before booking) */}
+        <FlightBookingEngine
+          currentCurrency={currency}
+          currentUser={currentUser}
+          onBookingComplete={(booking: ConfirmedBooking) => {
+            setSelectedFlight(booking.flight);
+            setSelectedCabin(booking.cabin);
+            setIsBoardingPassOpen(true);
+          }}
+          t={t}
+        />
 
-          <p className="mt-3 mx-auto max-w-2xl text-sm sm:text-base text-neutral-300 leading-relaxed">
-            {t('hero_subtitle')}
-          </p>
-        </div>
-      </section>
+        {/* 4. Global Aircraft Fleet Gallery with Country-Specific Liveries */}
+        <FleetGallery
+          onSelectAircraft={(aircraft) => {
+            const el = document.getElementById('booking');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+          lang={lang}
+          t={t}
+        />
 
-      {/* Main Core: Step-by-Step Flight Booking & Passenger Identity Engine */}
-      <FlightBookingEngine
-        currentCurrency={currency}
-        currentUser={currentUser}
-        onBookingComplete={(booking: ConfirmedBooking) => {
-          setSelectedFlight(booking.flight);
-          setSelectedCabin(booking.cabin);
-        }}
-        t={t}
-      />
+        {/* 5. 3D Aircraft Cabin Seat Map */}
+        <InteractiveSeatMap
+          currentCurrency={currency}
+          selectedSeats={selectedSeats}
+          onSeatToggle={(seat) => {
+            setSelectedSeats((prev) =>
+              prev.some((s) => s.id === seat.id)
+                ? prev.filter((s) => s.id !== seat.id)
+                : [...prev, seat]
+            );
+          }}
+          cabinClass={selectedCabin}
+          t={t}
+        />
+      </main>
 
-      {/* Interactive 3D Seat Map */}
-      <InteractiveSeatMap
-        currentCurrency={currency}
-        selectedSeats={selectedSeats}
-        onSeatToggle={(seat) => {
-          setSelectedSeats((prev) =>
-            prev.some((s) => s.id === seat.id)
-              ? prev.filter((s) => s.id !== seat.id)
-              : [...prev, seat]
-          );
-        }}
-        cabinClass={selectedCabin}
-        t={t}
-      />
+      {/* 6. Footer with Mandatory "Developed by Hamza Latif" Signature */}
+      <Footer lang={lang} />
 
-      {/* Clean Footer */}
-      <footer className="border-t border-white/10 bg-[#0a0e1a] py-8 text-xs text-neutral-400">
-        <div className="mx-auto max-w-7xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="font-serif text-base font-bold text-white">امپیریئن ایئرویز (EMPYREAN AIRWAYS)</span>
-            <p className="text-[11px] text-neutral-500">حکومت سے منظور شدہ بین الاقوامی و ملکی پروازیں</p>
-          </div>
-          <div className="text-center sm:text-end text-[11px] text-neutral-500">
-            24/7 ہیلپ لائن: 111-EMPYREAN (042-111-367-973) • لاہور، کراچی، اسلام آباد، دبئی
-          </div>
-        </div>
-      </footer>
-
-      {/* Authentication Modal (Register / Login with CNIC, Email, Phone) */}
+      {/* Mandatory Auth Modal (CNIC / ID Card & Phone Auth with OTP) */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onLoginSuccess={(user) => {
           setCurrentUser(user);
         }}
+        lang={lang}
         t={t}
       />
 
-      {/* e-KYC Modal */}
+      {/* WebRTC Live Camera Passport Scanner & e-KYC Verification Modal */}
       <PassportVerificationModal
         isOpen={isKycOpen}
         onClose={() => setIsKycOpen(false)}
@@ -163,7 +172,7 @@ export default function Home() {
         t={t}
       />
 
-      {/* Boarding Pass Modal */}
+      {/* Digital Boarding Pass Modal */}
       <BoardingPassModal
         isOpen={isBoardingPassOpen}
         onClose={() => setIsBoardingPassOpen(false)}
