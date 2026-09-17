@@ -1,23 +1,7 @@
 import React, { useState } from 'react';
 import { Plane, Users, Gauge, ArrowRight, Sparkles, CheckCircle2, Shield } from 'lucide-react';
 
-export interface AircraftFleetItem {
-  id: string;
-  name: string;
-  airlineLivery: string;
-  country: string;
-  countryCode: string;
-  flag: string;
-  capacity: string;
-  cruiseSpeed: string;
-  range: string;
-  image: string;
-  badge: string;
-  description: string;
-  accentColor: string;
-}
-
-export const FLEET_ITEMS: AircraftFleetItem[] = [
+export const FLEET_ITEMS = [
   {
     id: 'fleet-pk-777',
     name: 'Boeing 777-300ER Flagship',
