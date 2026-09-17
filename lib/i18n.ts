@@ -557,3 +557,24 @@ export const TRANSLATIONS: Record<LanguageCode, Record<string, string>> = {
     meal_info: '机上餐饮：'
   }
 };
+
+export function checkVisaStatus(nationality: string, destinationIata: string): { status: 'EXEMPT' | 'REQUIRED' | 'EVisa_ELIGIBLE'; note: string } {
+  const normNat = (nationality || '').toUpperCase().trim();
+  
+  if (['USA', 'UNITED STATES', 'GBR', 'UNITED KINGDOM', 'CAN', 'CANADA', 'FRA', 'FRANCE', 'DEU', 'GERMANY', 'JPN', 'JAPAN', 'ARE', 'UNITED ARAB EMIRATES'].includes(normNat)) {
+    if (destinationIata === 'LHR' || destinationIata === 'CDG' || destinationIata === 'DXB') {
+      return { status: 'EXEMPT', note: 'Bilateral visa-free agreement applies for up to 90 days.' };
+    }
+    return { status: 'EVisa_ELIGIBLE', note: 'Electronic travel authorization required prior to boarding.' };
+  }
+
+  if (normNat === 'PAK' || normNat === 'PAKISTAN') {
+    if (destinationIata === 'DXB') {
+      return { status: 'EVisa_ELIGIBLE', note: 'UAE 30/60-day tourist eVisa automatically expedited via VIP concierge.' };
+    }
+    return { status: 'REQUIRED', note: 'Biometric Embassy Visa clearance required prior to check-in.' };
+  }
+
+  return { status: 'EVisa_ELIGIBLE', note: 'Electronic Visa eligible via fast-track Sovereign immigration lane.' };
+}
+

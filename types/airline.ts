@@ -82,3 +82,18 @@ export interface ConfirmedBooking {
   bookingDate: string;
   status: 'CONFIRMED' | 'ISSUED';
 }
+
+export interface KycPassportData {
+  fullName: string;
+  passportNumber: string;
+  nationality: string;
+  dateOfBirth: string;
+  expiryDate: string;
+  gender: string;
+  mrzRaw: string;
+  icaoVerified: boolean;
+  biometricMatchConfidence: number;
+  visaStatus: 'EXEMPT' | 'ETA_REQUIRED' | 'VISA_REQUIRED' | 'REQUIRED' | 'EVisa_ELIGIBLE';
+  visaNotes: string;
+}
+
