@@ -314,6 +314,112 @@
       }
     ];
 
+    // --- UNIFORM SVG ICONS & STANDARDIZED ICON CONTAINER ---
+    const IconBox = ({ children, className = "" }) => (
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-400/30 bg-amber-400/10 text-amber-400 shadow-sm transition-all ${className}`}>
+        {children}
+      </div>
+    );
+
+    const PlaneSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.3c.4-.2.6-.6.5-1.1z"/>
+      </svg>
+    );
+
+    const DashboardSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect width="7" height="9" x="3" y="3" rx="1"/>
+        <rect width="7" height="5" x="14" y="3" rx="1"/>
+        <rect width="7" height="9" x="14" y="12" rx="1"/>
+        <rect width="7" height="5" x="3" y="16" rx="1"/>
+      </svg>
+    );
+
+    const FleetSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m2 12 5-3 3 3-2 5 2 2 4-2 3 3 5-5-3-3 2-4-2-2-5 2-3-3 3-5L2 12z"/>
+      </svg>
+    );
+
+    const ShieldSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+        <path d="m9 12 2 2 4-4"/>
+      </svg>
+    );
+
+    const MenuSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="4" x2="20" y1="12" y2="12"/>
+        <line x1="4" x2="20" y1="6" y2="6"/>
+        <line x1="4" x2="20" y1="18" y2="18"/>
+      </svg>
+    );
+
+    const CloseSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 6 6 18"/>
+        <path d="m6 6 12 12"/>
+      </svg>
+    );
+
+    const UserSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+    );
+
+    const BackupSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M3 5V19A9 3 0 0 0 21 19V5"/>
+        <path d="M3 12A9 3 0 0 0 21 12"/>
+      </svg>
+    );
+
+    const DownloadSvg = ({ className = "h-4 w-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="7 10 12 15 17 10"/>
+        <line x1="12" x2="12" y1="15" y2="3"/>
+      </svg>
+    );
+
+    const UploadSvg = ({ className = "h-4 w-4" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" x2="12" y1="3" y2="15"/>
+      </svg>
+    );
+
+    const CurrencySvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="8"/>
+        <line x1="12" x2="12" y1="2" y2="4"/>
+        <line x1="12" x2="12" y1="20" y2="22"/>
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+      </svg>
+    );
+
+    const GlobeSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" x2="22" y1="12" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+    );
+
+    const LogoutSvg = ({ className = "h-5 w-5" }) => (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" x2="9" y1="12" y2="12"/>
+      </svg>
+    );
+
     // --- MAIN APP COMPONENT ---
     function TheFlyWithSkyApp() {
       // Global View: 'MAIN' (Flight search & booking) | 'DASHBOARD' (Customer Dashboard)
@@ -584,155 +690,42 @@
 
       return (
         <div dir={activeLang.dir} className="min-h-screen bg-[#060a14] text-neutral-100 flex flex-col justify-between selection:bg-amber-400 selection:text-black">
-          {/* --- 1. TOP HEADER WITH BRANDING & SIDE DRAWER TRIGGER --- */}
+          {/* --- 1. TOP HEADER: WEBSITE NAME ONLY ON FRONT SCREEN & UNIFORM SIDE MENU TRIGGER --- */}
           <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#080d19]/95 backdrop-blur-xl shadow-lg">
             <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-              {/* Brand Logo & Name */}
-              <div className="flex items-center gap-3">
-                {/* SIDE DRAWER TRIGGER BUTTON (سائیڈ مینو بٹن) */}
+              {/* Left Side: Matching Uniform Logo Icon */}
+              <div
+                onClick={() => setCurrentView('MAIN')}
+                className="cursor-pointer group flex items-center"
+                title="The Fly With Sky Home"
+              >
+                <IconBox className="bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-neutral-950 font-bold shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform border-none">
+                  <PlaneSvg className="h-5 w-5 transform -rotate-45" />
+                </IconBox>
+              </div>
+
+              {/* Center / Front Screen: ONLY the Website Name */}
+              <div
+                onClick={() => setCurrentView('MAIN')}
+                className="text-center cursor-pointer select-none group px-2"
+              >
+                <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold tracking-wider text-white group-hover:text-amber-300 transition-colors uppercase drop-shadow-md">
+                  THE FLY WITH SKY
+                </h1>
+                <p className="text-[11px] sm:text-xs text-amber-400/85 font-medium tracking-widest uppercase mt-0.5">
+                  {lang === 'ur' ? 'دی فلائی ود سکائی • شاہی عالمی پروازیں' : 'Luxury Beyond Horizons'}
+                </p>
+              </div>
+
+              {/* Right Side: Side Drawer Trigger (Exact Same h-10 w-10 Size) */}
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsSideDrawerOpen(true)}
-                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-amber-400 hover:bg-amber-400 hover:text-neutral-950 transition shadow-md"
-                  title="Open Side Menu (سائیڈ مینو کھولیں)"
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl border border-amber-400/40 bg-amber-400/10 text-amber-400 hover:bg-amber-400 hover:text-neutral-950 transition shadow-md group cursor-pointer"
+                  title={lang === 'ur' ? 'تمام سہولیات اور سائیڈ مینو کھولیں' : 'Open All Services & Side Menu'}
                 >
-                  <span className="text-xl font-bold">☰</span>
+                  <MenuSvg className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 </button>
-
-                <div
-                  onClick={() => setCurrentView('MAIN')}
-                  className="flex items-center gap-2.5 cursor-pointer group"
-                >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 via-amber-500 to-amber-600 text-neutral-950 font-bold shadow-lg shadow-amber-500/25 group-hover:scale-105 transition-transform">
-                    <span className="text-xl">✈</span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-serif text-xl sm:text-2xl font-bold tracking-wider text-white">
-                        The Fly With Sky
-                      </span>
-                      <span className="hidden sm:inline-block rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-300 border border-amber-400/30">
-                        FLAGSHIP
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-neutral-400">
-                      {lang === 'ur' ? 'دی فلائی ود سکائی • شاہی عالمی پروازیں' : 'Luxury Beyond Horizons'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Center Menu Switcher: Main Booking vs Customer Dashboard */}
-              <div className="hidden lg:flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-xs font-semibold text-neutral-300 backdrop-blur-md">
-                <button
-                  onClick={() => {
-                    setCurrentView('MAIN');
-                    setBookingStep('SEARCH');
-                  }}
-                  className={`rounded-full px-4 py-1.5 transition ${
-                    currentView === 'MAIN'
-                      ? 'bg-amber-400 text-neutral-950 font-bold shadow-md'
-                      : 'hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {lang === 'ur' ? 'پروازیں بک کریں (Home)' : 'Flight Booking Portal'}
-                </button>
-
-                <button
-                  onClick={() => setCurrentView('DASHBOARD')}
-                  className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 transition ${
-                    currentView === 'DASHBOARD'
-                      ? 'bg-amber-400 text-neutral-950 font-bold shadow-md'
-                      : 'hover:text-amber-300 hover:bg-white/10 text-neutral-200'
-                  }`}
-                >
-                  <span>📊</span>
-                  <span>{lang === 'ur' ? 'کسٹمر ڈیش بورڈ' : 'Customer Dashboard'}</span>
-                  {travelHistory.length > 0 && (
-                    <span className="rounded-full bg-amber-400/30 px-1.5 py-0.2 text-[9px] font-mono text-amber-300">
-                      {travelHistory.length}
-                    </span>
-                  )}
-                </button>
-
-                <a href="#fleet" className="rounded-full px-4 py-1.5 hover:text-white hover:bg-white/10 transition">
-                  {lang === 'ur' ? 'فضائی بیڑہ' : 'Fleet Showcase'}
-                </a>
-              </div>
-
-              {/* Header Controls */}
-              <div className="flex items-center gap-2 sm:gap-3">
-                {/* User Session Badge / Dashboard Opener */}
-                {currentUser ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setCurrentView('DASHBOARD')}
-                      className="flex items-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs hover:border-amber-400 transition"
-                      title="Open Customer Dashboard"
-                    >
-                      <div className="h-7 w-7 rounded-full bg-amber-400 text-neutral-950 font-bold flex items-center justify-center">
-                        {currentUser.name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="hidden sm:block text-start leading-tight">
-                        <span className="block font-bold text-white max-w-[120px] truncate">{currentUser.name}</span>
-                        <span className="block font-mono text-[9px] text-amber-300">CNIC: {currentUser.cnic}</span>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setCurrentUser(null);
-                        localStorage.removeItem('flywithsky_user');
-                      }}
-                      className="rounded-xl border border-white/10 bg-white/5 p-2 text-neutral-400 hover:text-red-400 hover:bg-white/10 transition text-xs"
-                      title="Sign Out"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => setIsAuthOpen(true)}
-                    className="rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-neutral-950 shadow-md hover:from-amber-300 transition"
-                  >
-                    {lang === 'ur' ? 'لاگ ان / رجسٹر' : 'Sign In / Register'}
-                  </button>
-                )}
-
-                {/* Quick Backup Trigger */}
-                <button
-                  onClick={handleDownloadBackup}
-                  className="hidden md:flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
-                  title="Download Backup of Your Bookings"
-                >
-                  <span>💾</span>
-                  <span>{lang === 'ur' ? 'بیک اپ' : 'Backup'}</span>
-                </button>
-
-                {/* Currency Switcher */}
-                <select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                  className="rounded-full border border-white/15 bg-[#0e1626] px-2.5 py-1.5 text-xs font-mono font-bold text-amber-300 cursor-pointer"
-                >
-                  {Object.values(CURRENCIES).map((c) => (
-                    <option key={c.code} value={c.code} className="bg-[#0e1626]">
-                      {c.code} ({c.symbol})
-                    </option>
-                  ))}
-                </select>
-
-                {/* Language Switcher */}
-                <select
-                  value={lang}
-                  onChange={(e) => handleLanguageChange(e.target.value)}
-                  className="rounded-full border border-white/15 bg-[#0e1626] px-2.5 py-1.5 text-xs font-medium text-white cursor-pointer"
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code} className="bg-[#0e1626]">
-                      {l.flag} {l.nativeName}
-                    </option>
-                  ))}
-                </select>
               </div>
             </div>
           </header>
@@ -1484,12 +1477,12 @@
             </main>
           )}
 
-          {/* --- 3. SLIDING POP-UP SIDE DRAWER (سائیڈ پاپ اپ مینو) --- */}
+          {/* --- 3. SLIDING POP-UP SIDE DRAWER (تمام سہولیات ایک سائیڈ پہ مع یکساں سائز آئیکونز) --- */}
           {isSideDrawerOpen && (
             <div className="fixed inset-0 z-50 flex justify-end animate-in fade-in duration-200">
               <div
                 onClick={() => setIsSideDrawerOpen(false)}
-                className="fixed inset-0 bg-black/75 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/75 backdrop-blur-sm transition-opacity"
               />
 
               <div className="relative w-full max-w-sm sm:max-w-md h-full bg-gradient-to-b from-[#090f1d] via-[#0d1629] to-[#070b14] border-s border-amber-400/30 p-6 shadow-2xl flex flex-col justify-between z-10 overflow-y-auto">
@@ -1497,83 +1490,125 @@
                   {/* Drawer Header */}
                   <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-950 font-bold shadow-lg shadow-amber-500/20">
-                        <span className="text-lg">✈</span>
-                      </div>
+                      <IconBox className="bg-gradient-to-br from-amber-400 to-amber-600 text-neutral-950 font-bold border-none shadow-md">
+                        <PlaneSvg className="h-5 w-5 transform -rotate-45" />
+                      </IconBox>
                       <div>
                         <span className="font-serif text-lg font-bold text-white block">The Fly With Sky</span>
                         <span className="text-[10px] text-amber-300 font-mono">
-                          {lang === 'ur' ? 'سائیڈ مینو اور ڈیش بورڈ' : 'Side Navigation & Control'}
+                          {lang === 'ur' ? 'سائیڈ مینو اور تمام سہولیات' : 'Side Navigation & Services'}
                         </span>
                       </div>
                     </div>
 
                     <button
                       onClick={() => setIsSideDrawerOpen(false)}
-                      className="rounded-full p-2 text-neutral-400 hover:text-white hover:bg-white/10 transition"
+                      className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/15 bg-white/5 text-neutral-400 hover:text-white hover:bg-white/10 transition"
+                      title="Close"
                     >
-                      ✕
+                      <CloseSvg className="h-5 w-5" />
                     </button>
                   </div>
 
-                  {/* Customer Card in Drawer */}
+                  {/* Customer Profile Card in Drawer */}
                   <div className="mb-6 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-amber-400 text-neutral-950 font-bold flex items-center justify-center text-sm">
-                        {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'H'}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <IconBox className="bg-amber-400 text-neutral-950 font-bold border-none shadow-md">
+                          <span className="text-base font-bold">
+                            {currentUser ? currentUser.name.charAt(0).toUpperCase() : 'H'}
+                          </span>
+                        </IconBox>
+                        <div>
+                          <span className="font-bold text-white text-sm block">
+                            {currentUser ? currentUser.name : 'Hamza Latif'}
+                          </span>
+                          <span className="font-mono text-[10px] text-amber-300 block">
+                            CNIC: {currentUser ? currentUser.cnic : '31302-5257137-7'}
+                          </span>
+                          <span className="text-[10px] text-emerald-400 font-semibold block">
+                            NADRA CNIC Verified ✓
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="font-bold text-white text-sm block">{currentUser ? currentUser.name : 'Hamza Latif'}</span>
-                        <span className="font-mono text-[10px] text-amber-300 block">
-                          CNIC: {currentUser ? currentUser.cnic : '31302-5257137-7'}
-                        </span>
-                        <span className="text-[10px] text-emerald-400 font-semibold block">
-                          Verified Passenger • {travelHistory.length} Saved Flights
-                        </span>
-                      </div>
+
+                      {currentUser ? (
+                        <button
+                          onClick={() => {
+                            setCurrentUser(null);
+                            localStorage.removeItem('flywithsky_user');
+                          }}
+                          className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-neutral-400 hover:text-red-400 hover:bg-white/10 transition"
+                          title="Sign Out"
+                        >
+                          <LogoutSvg className="h-5 w-5" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setIsSideDrawerOpen(false);
+                            setIsAuthOpen(true);
+                          }}
+                          className="rounded-xl bg-amber-400 px-3.5 py-2 text-xs font-bold text-neutral-950 shadow hover:bg-amber-300 transition"
+                        >
+                          Login
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Navigation Links */}
-                  <div className="space-y-2">
+                  {/* Navigation Links with EXACT SAME SIZE IconBox */}
+                  <div className="space-y-2.5">
+                    {/* 1. Flight Booking Portal */}
                     <button
                       onClick={() => {
                         setCurrentView('MAIN');
                         setIsSideDrawerOpen(false);
+                        setBookingStep('SEARCH');
                       }}
-                      className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition ${
+                      className={`w-full flex items-center justify-between rounded-2xl p-2.5 text-xs font-semibold transition ${
                         currentView === 'MAIN'
                           ? 'bg-amber-400 text-neutral-950 font-bold shadow-md shadow-amber-400/20'
                           : 'border border-white/10 bg-white/5 text-neutral-200 hover:bg-white/10'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span>✈</span>
-                        <span>{lang === 'ur' ? 'مین فلائٹ بکنگ (Home)' : 'Flight Booking Portal'}</span>
+                        <IconBox className={currentView === 'MAIN' ? 'bg-neutral-950 text-amber-400 border-none' : ''}>
+                          <PlaneSvg className="h-5 w-5" />
+                        </IconBox>
+                        <span className="text-sm font-medium">
+                          {lang === 'ur' ? 'فلائٹ بکنگ پورٹل (Home)' : 'Flight Booking Portal'}
+                        </span>
                       </div>
-                      <span>➔</span>
+                      <span className="pe-2 text-xs opacity-70">➔</span>
                     </button>
 
+                    {/* 2. Customer Dashboard */}
                     <button
                       onClick={() => {
                         setCurrentView('DASHBOARD');
                         setIsSideDrawerOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between rounded-2xl px-4 py-3 text-xs font-semibold transition ${
+                      className={`w-full flex items-center justify-between rounded-2xl p-2.5 text-xs font-semibold transition ${
                         currentView === 'DASHBOARD'
                           ? 'bg-amber-400 text-neutral-950 font-bold shadow-md shadow-amber-400/20'
                           : 'border border-white/10 bg-white/5 text-neutral-200 hover:bg-white/10'
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span>📊</span>
-                        <span>{lang === 'ur' ? 'کسٹمر ڈیش بورڈ (Customer Dashboard)' : 'Customer Travel Dashboard'}</span>
+                        <IconBox className={currentView === 'DASHBOARD' ? 'bg-neutral-950 text-amber-400 border-none' : ''}>
+                          <DashboardSvg className="h-5 w-5" />
+                        </IconBox>
+                        <span className="text-sm font-medium">
+                          {lang === 'ur' ? 'کسٹمر ڈیش بورڈ' : 'Customer Travel Dashboard'}
+                        </span>
                       </div>
-                      <span className="rounded bg-amber-400/20 px-2 py-0.5 text-[9px] font-bold text-amber-300">
+                      <span className="rounded-full bg-amber-400/30 px-2 py-0.5 text-xs font-mono font-bold text-amber-300">
                         {travelHistory.length}
                       </span>
                     </button>
 
+                    {/* 3. Global Fleet Showcase */}
                     <button
                       onClick={() => {
                         setCurrentView('MAIN');
@@ -1581,54 +1616,115 @@
                         const f = document.getElementById('fleet');
                         if (f) f.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-semibold text-neutral-200 hover:bg-white/10 transition"
+                      className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-2.5 text-xs font-semibold text-neutral-200 hover:bg-white/10 transition"
                     >
                       <div className="flex items-center gap-3">
-                        <span>🇵🇰</span>
-                        <span>{lang === 'ur' ? 'عالمی فضائی بیڑہ (Fleet Showcase)' : 'Global Fleet Gallery'}</span>
+                        <IconBox>
+                          <FleetSvg className="h-5 w-5" />
+                        </IconBox>
+                        <span className="text-sm font-medium">
+                          {lang === 'ur' ? 'عالمی فضائی بیڑہ (Fleet Showcase)' : 'Global Fleet Showcase'}
+                        </span>
                       </div>
-                      <span>➔</span>
+                      <span className="pe-2 text-xs opacity-70">➔</span>
                     </button>
 
+                    {/* 4. Biometric e-KYC Scanner */}
                     <button
                       onClick={() => {
                         setIsSideDrawerOpen(false);
                         startCamera();
                       }}
-                      className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs font-semibold text-neutral-200 hover:bg-white/10 transition"
+                      className="w-full flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-2.5 text-xs font-semibold text-neutral-200 hover:bg-white/10 transition"
                     >
                       <div className="flex items-center gap-3">
-                        <span>🛡️</span>
-                        <span>{lang === 'ur' ? 'بائیو میٹرک پاسپورٹ اسکینر (e-KYC)' : 'Biometric e-KYC Scanner'}</span>
+                        <IconBox className="border-cyan-500/30 bg-cyan-500/10 text-cyan-300">
+                          <ShieldSvg className="h-5 w-5" />
+                        </IconBox>
+                        <span className="text-sm font-medium">
+                          {lang === 'ur' ? 'بائیو میٹرک پاسپورٹ اسکینر (e-KYC)' : 'Biometric e-KYC Scanner'}
+                        </span>
                       </div>
-                      <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                      <span className="h-2.5 w-2.5 rounded-full bg-cyan-400 animate-pulse me-2" />
                     </button>
                   </div>
 
-                  {/* DATA BACKUP & RESTORE SECTION IN SIDE DRAWER */}
-                  <div className="mt-6 pt-5 border-t border-white/10">
-                    <div className="flex items-center gap-2 text-xs font-bold text-amber-300 mb-2">
-                      <span>💾</span>
-                      <span>{lang === 'ur' ? 'بیک اپ اور ڈیٹا سیکیورٹی سنٹر' : 'Data Backup & Vault Center'}</span>
+                  {/* Settings Section: Currency & Language Switchers (with matching IconBox) */}
+                  <div className="mt-5 pt-4 border-t border-white/10 space-y-3">
+                    {/* Currency Switcher */}
+                    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-2.5">
+                      <div className="flex items-center gap-3">
+                        <IconBox>
+                          <CurrencySvg className="h-5 w-5" />
+                        </IconBox>
+                        <span className="text-xs font-semibold text-neutral-200">
+                          {lang === 'ur' ? 'کرنسی منتخب کریں:' : 'Currency:'}
+                        </span>
+                      </div>
+                      <select
+                        value={currency}
+                        onChange={(e) => setCurrency(e.target.value)}
+                        className="rounded-xl border border-white/15 bg-[#0e1626] px-3 py-1.5 text-xs font-mono font-bold text-amber-300 cursor-pointer focus:outline-none"
+                      >
+                        {Object.values(CURRENCIES).map((c) => (
+                          <option key={c.code} value={c.code} className="bg-[#0e1626]">
+                            {c.code} ({c.symbol})
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
-                    <p className="text-[11px] text-neutral-400 leading-relaxed mb-3">
-                      {lang === 'ur'
-                        ? 'آپ کی تمام پچھلی پروازوں اور ٹکٹس کا ڈیٹا ہمیشہ محفوظ رہتا ہے۔ آپ فائل ڈاؤنلوڈ بھی کر سکتے ہیں۔'
-                        : 'Every booking you make is permanently stored in your encrypted local vault.'}
-                    </p>
+                    {/* Language Switcher */}
+                    <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-2.5">
+                      <div className="flex items-center gap-3">
+                        <IconBox>
+                          <GlobeSvg className="h-5 w-5" />
+                        </IconBox>
+                        <span className="text-xs font-semibold text-neutral-200">
+                          {lang === 'ur' ? 'زبان منتخب کریں:' : 'Language:'}
+                        </span>
+                      </div>
+                      <select
+                        value={lang}
+                        onChange={(e) => handleLanguageChange(e.target.value)}
+                        className="rounded-xl border border-white/15 bg-[#0e1626] px-3 py-1.5 text-xs font-medium text-white cursor-pointer focus:outline-none"
+                      >
+                        {LANGUAGES.map((l) => (
+                          <option key={l.code} value={l.code} className="bg-[#0e1626]">
+                            {l.flag} {l.nativeName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* DATA BACKUP & RESTORE SECTION IN SIDE DRAWER */}
+                  <div className="mt-5 pt-4 border-t border-white/10">
+                    <div className="flex items-center gap-3 mb-3">
+                      <IconBox>
+                        <BackupSvg className="h-5 w-5" />
+                      </IconBox>
+                      <div>
+                        <span className="text-xs font-bold text-amber-300 block">
+                          {lang === 'ur' ? 'بیک اپ اور ڈیٹا سیکیورٹی سنٹر' : 'Data Backup Vault'}
+                        </span>
+                        <span className="text-[10px] text-neutral-400 block">
+                          {lang === 'ur' ? 'تمام پروازوں کا ڈیٹا ڈیوائس پر محفوظ کریں' : 'Preserve bookings on your local device'}
+                        </span>
+                      </div>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={handleDownloadBackup}
-                        className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-400/40 bg-amber-400/10 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
+                        className="flex items-center justify-center gap-2 rounded-2xl border border-amber-400/40 bg-amber-400/10 py-2.5 text-xs font-bold text-amber-300 hover:bg-amber-400/20 transition"
                       >
-                        <span>⬇</span>
-                        <span>{lang === 'ur' ? 'بیک اپ فائل لیں' : 'Export Backup'}</span>
+                        <DownloadSvg className="h-4 w-4" />
+                        <span>{lang === 'ur' ? 'بیک اپ فائل لیں' : 'Export'}</span>
                       </button>
 
-                      <label className="flex items-center justify-center gap-1.5 rounded-xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-neutral-300 hover:bg-white/10 cursor-pointer transition">
-                        <span>⬆</span>
+                      <label className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 py-2.5 text-xs font-bold text-neutral-300 hover:bg-white/10 cursor-pointer transition">
+                        <UploadSvg className="h-4 w-4" />
                         <span>{lang === 'ur' ? 'بیک اپ بحال کریں' : 'Restore'}</span>
                         <input
                           type="file"
